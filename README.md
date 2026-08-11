@@ -41,6 +41,7 @@ Aplicação Fullstack desenvolvida para o desafio **Elite Dev 2026** da Verzel. 
 * Inicialização do projeto no Visual Studio Code com Next.js e TypeScript.
 * Estruturação inicial do repositório e elaboração do `README.md`.
 * Configuração do Tailwind CSS e preparação para a criação das rotas e do modelo de dados no Prisma.
+* Configuração do Banco de Dados: Instalação e inicialização do Prisma ORM com PostgreSQL.
 
 ---
 
