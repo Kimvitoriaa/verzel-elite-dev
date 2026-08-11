@@ -22,6 +22,21 @@ Aplicação Fullstack desenvolvida para o desafio **Elite Dev 2026** da Verzel. 
 * **Supabase / Neon Postgres:** Serviço de hospedagem em nuvem para a instância do banco de dados PostgreSQL.
 * **Vercel:** Plataforma de hospedagem para deploy contínuo e público da aplicação Fullstack.
 
+---
+
+---
+
+## 🗄️ Instruções de Configuração do Banco de Dados (PostgreSQL + Prisma)
+
+Para rodar e conectar o banco de dados PostgreSQL nesta aplicação:
+
+* **1. Instalação do ORM:** O projeto utiliza o Prisma ORM. Dependências instaladas via: `npm install -D prisma`
+* **2. Variáveis de Ambiente:** Configure o arquivo `.env` na raiz do projeto com a URL de conexão do PostgreSQL: `DATABASE_URL="postgresql://usuario:senha@localhost:5432/nomedobanco?schema=public"`
+* **3. Gerar Artefatos do Prisma:** Execute o comando: `npx prisma generate`
+* **4. Executar Migrations:** Para aplicar a criação das tabelas no banco de dados: `npx prisma migrate dev --name init`
+
+
+
 ### Integrações & Bibliotecas Auxiliares
 * **TMDb API (The Movie Database):** API externa para catálogo de filmes e shows na criação de eventos pelo Organizador.
 * **qrcode (npm package):** Biblioteca para geração de QR Codes seguros e infalsificáveis.
