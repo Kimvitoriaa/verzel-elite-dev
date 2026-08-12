@@ -1,13 +1,78 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ORGANIZER
+  ADMIN
+}
+
+enum TicketStatus {
+  AVAILABLE
+  RESERVED
+  USED
+  CANCELLED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events      Event[]
+  tickets     Ticket[]
+  validations Validation[]
+}
+
+model Event {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  date        DateTime
+  location    String
+  bannerUrl   String?
+  totalTickets Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizerId String
+  organizer   User     @relation(fields: [organizerId], references: [id])
+
+  tickets Ticket[]
+}
+
+model Ticket {
+  id        String       @id @default(uuid())
+  qrCode    String       @unique
+  status    TicketStatus @default(AVAILABLE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  userId  String
+  user    User   @relation(fields: [userId], references: [id])
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id])
+
+  validations Validation[]
+}
+
+model Validation {
+  id        String   @id @default(uuid())
+  validatedAt DateTime @default(now())
+
+  ticketId String
+  ticket   Ticket @relation(fields: [ticketId], references: [id])
+
+  validatorId String
+  validator   User   @relation(fields: [validatorId], references: [id])
 }

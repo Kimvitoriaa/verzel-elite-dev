@@ -60,6 +60,14 @@ Para rodar e conectar o banco de dados PostgreSQL nesta aplicação:
 
 ---
 
+## 📅 Status do Projeto - Dia 12/08/2026
+
+* **Modelagem de Dados:** Tabelas `User`, `Event`, `Ticket` e `Validation` criadas no Prisma Schema.
+* **Banco de Dados:** Instância PostgreSQL configurada com sucesso no Supabase.
+* **Migrations:** Estrutura sincronizada com sucesso no banco de dados em nuvem.
+
+---
+
 ## 💡 Recursos Diferenciais de Acessibilidade & UX
 * **Acessibilidade Neurodivergente (Modo Focado):** Redução de ruído visual para navegação simplificada por pessoas dentro do espectro autista ou TDAH.
 * **Modo Baixa Visão & Idosos:** Tipografia ampliada e alto contraste ativável a qualquer momento.
