@@ -75,6 +75,14 @@ Para rodar e conectar o banco de dados PostgreSQL nesta aplicação:
 * **Portaria Interativa (Planta 2D):** Criação da interface visual 2D para simulação de leitura e validação de entrada de ingressos.
 * **Testes Automatizados:** Criação da suíte de testes unitários e de integração utilizando **Vitest** e **Testing Library**.
 
+📅 14/08/2026 — Telas de Eventos, Checkout, Compartilhamento, README e Deploy Final
+
+- Home & Catálogo: Conexão da Home Page com a API do TMDb para exibição do catálogo de eventos com busca e filtros de busca.
+- Detalhes & Checkout: Criação da página de detalhes do evento, mapa de lugares/quantidade de ingressos e tela de pagamento simulado (sucesso e recusa).
+- Compartilhamento de Ingressos: Lógica para geração e cópia de link público compartilhável do ingresso via URL segura.
+- Documentação Completa (README.md): Instruções de execução, dados de teste semeados (seed), decisões de arquitetura e relatório de uso de IA.
+- Deploy Público (Vercel): Publicação unificada do projeto Next.js na Vercel com conexão ao banco de dados Supabase em produção, garantindo o acesso antecipado para avaliação.
+
 ---
 
 
