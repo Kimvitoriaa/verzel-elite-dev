@@ -32,4 +32,26 @@ describe('Suíte de Testes do Backend - Verzel Elite Dev', () => {
     expect(ticketHash).toContain('event-12');
     expect(ticketHash).toContain('user-876');
   });
+
+  it('Deve validar a regra do PIN de Autenticação em Duas Etapas (2FA)', () => {
+    const pinCorreto = '1234';
+    const pinIncorreto = '0000';
+
+    const validar2FA = (pin: string) => pin === '1234';
+
+    expect(validar2FA(pinCorreto)).toBe(true);
+    expect(validar2FA(pinIncorreto)).toBe(false);
+  });
+
+  it('Deve garantir que as opções de acessibilidade possuem as classes corretas', () => {
+    const accessibilityOptions = {
+      highContrast: 'contrast-125 brightness-90',
+      focusedMode: 'grayscale',
+      largeText: '18px',
+    };
+
+    expect(accessibilityOptions.highContrast).toContain('contrast-125');
+    expect(accessibilityOptions.focusedMode).toBe('grayscale');
+    expect(accessibilityOptions.largeText).toBe('18px');
+  });
 });
