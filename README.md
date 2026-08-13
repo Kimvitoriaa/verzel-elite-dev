@@ -26,15 +26,16 @@ Aplicação Fullstack desenvolvida para o desafio **Elite Dev 2026** da Verzel. 
 
 ---
 
-## 🗄️ Instruções de Configuração do Banco de Dados (PostgreSQL + Prisma)
+## 💾 Instruções de Configuração do Banco de Dados (PostgreSQL + Prisma)
 
 Para rodar e conectar o banco de dados PostgreSQL nesta aplicação:
 
 * **1. Instalação do ORM:** O projeto utiliza o Prisma ORM. Dependências instaladas via: `npm install -D prisma`
-* **2. Variáveis de Ambiente:** Configure o arquivo `.env` na raiz do projeto com a URL de conexão do PostgreSQL: `DATABASE_URL="postgresql://usuario:senha@localhost:5432/nomedobanco?schema=public"`
+* **2. Variáveis de Ambiente:** Configure o arquivo `.env` na raiz do projeto com a URL de conexão do PostgreSQL:
+  `DATABASE_URL="postgresql://usuario:senha@localhost:5432/nomedobanco?schema=public"`
 * **3. Gerar Artefatos do Prisma:** Execute o comando: `npx prisma generate`
 * **4. Executar Migrations:** Para aplicar a criação das tabelas no banco de dados: `npx prisma migrate dev --name init`
-
+* **5. Popular Dados de Teste (Seed):** Para popular o banco com os usuários de teste (Organizador, Clientes e Portaria) e o evento inicial, execute: `npx prisma db seed`
 
 
 ### Integrações & Bibliotecas Auxiliares
@@ -75,13 +76,13 @@ Para rodar e conectar o banco de dados PostgreSQL nesta aplicação:
 * **Portaria Interativa (Planta 2D):** Criação da interface visual 2D para simulação de leitura e validação de entrada de ingressos.
 * **Testes Automatizados:** Criação da suíte de testes unitários e de integração utilizando **Vitest** e **Testing Library**.
 
-📅 14/08/2026 — Telas de Eventos, Checkout, Compartilhamento, README e Deploy Final
+#### 📅 14/08/2026 — Telas de Eventos, Checkout, Compartilhamento, README e Deploy Final
 
-- Home & Catálogo: Conexão da Home Page com a API do TMDb para exibição do catálogo de eventos com busca e filtros de busca.
-- Detalhes & Checkout: Criação da página de detalhes do evento, mapa de lugares/quantidade de ingressos e tela de pagamento simulado (sucesso e recusa).
-- Compartilhamento de Ingressos: Lógica para geração e cópia de link público compartilhável do ingresso via URL segura.
-- Documentação Completa (README.md): Instruções de execução, dados de teste semeados (seed), decisões de arquitetura e relatório de uso de IA.
-- Deploy Público (Vercel): Publicação unificada do projeto Next.js na Vercel com conexão ao banco de dados Supabase em produção, garantindo o acesso antecipado para avaliação.
+* **Home & Catálogo:** Conexão da Home Page com a API do TMDb para exibição do catálogo de eventos com busca e filtros por título.
+* **Detalhes & Checkout:** Criação da página de detalhes do evento, mapa de lugares/quantidade de ingressos e tela de pagamento simulado (tratando cenários de confirmação e recusa).
+* **Compartilhamento de Ingressos:** Lógica para geração e cópia de link público e seguro para compartilhamento de ingresso via URL.
+* **Documentação Completa (README.md):** Guia detalhado de execução, dados de teste (seed), justificativa de decisões de arquitetura e relatório de transparência no uso de IA.
+* **Deploy Público (Vercel):** Publicação unificada da aplicação Next.js na Vercel integrada ao PostgreSQL no Supabase, garantindo o link público para avaliação antecipada.
 
 ---
 
