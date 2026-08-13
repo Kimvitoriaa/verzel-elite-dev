@@ -65,6 +65,16 @@ Para rodar e conectar o banco de dados PostgreSQL nesta aplicação:
 * **Migrations:** Estrutura gerada e sincronizada no banco em nuvem.
 * **Ambiente de Testes:** Instalação das dependências do Vitest, Testing Library e configuração do `vitest.config.ts` prontas para a suíte de testes.
 
+
+#### 📅 13/08/2026 — Backend Completo, Integração TMDb, Fluxo de Ingressos e Acessibilidade
+* **Autenticação e Segurança:** Implementação dos serviços de cadastro e login com criptografia (`bcryptjs`) e geração de tokens (`jsonwebtoken`).
+* **Integração de Eventos (TMDb):** Conexão com a API do TMDb para população automática do catálogo, rotas de criação e listagem de eventos (`GET/POST /api/events`).
+* **Fluxo de Reserva e Ingressos:** Implementação da rota de compra (`POST /api/tickets/purchase`), lógica da aba "Meus Ingressos" e geração de QR Code dinâmico/Hash de validação (`qrcode`).
+* **Segurança e Validação:** Implementação do fluxo de Autenticação em Duas Etapas (2FA) para exibição do QR Code e criação da rota de validação para a Portaria (`POST /api/tickets/validate`).
+* **Recursos de Acessibilidade:** Desenvolvimento dos alternadores globais (Modo Focado/Autismo, Baixa Visão, Sensibilidade à Luz e Navegação Didática).
+* **Portaria Interativa (Planta 2D):** Criação da interface visual 2D para simulação de leitura e validação de entrada de ingressos.
+* **Testes Automatizados:** Criação da suíte de testes unitários e de integração utilizando **Vitest** e **Testing Library**.
+
 ---
 
 
