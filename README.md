@@ -58,13 +58,19 @@ Para rodar e conectar o banco de dados PostgreSQL nesta aplicação:
 * Configuração do Tailwind CSS e preparação para a criação das rotas e do modelo de dados no Prisma.
 * Configuração do Banco de Dados: Instalação e inicialização do Prisma ORM com PostgreSQL.
 
+
 ---
 
-## 📅 Status do Projeto - Dia 12/08/2026
+## 📅 12/08/2026 — Modelagem das Tabelas (Schema Prisma), Migrations e Configuração de Testes
 
 * **Modelagem de Dados:** Tabelas `User`, `Event`, `Ticket` e `Validation` criadas no Prisma Schema.
 * **Banco de Dados:** Instância PostgreSQL configurada com sucesso no Supabase.
-* **Migrations:** Estrutura sincronizada com sucesso no banco de dados em nuvem.
+* **Migrations:** Estrutura gerada e sincronizada no banco em nuvem.
+* **Ambiente de Testes:** Instalação das dependências do Vitest, Testing Library e configuração do `vitest.config.ts` prontas para a suíte de testes.
+
+---
+
+
 
 ---
 
