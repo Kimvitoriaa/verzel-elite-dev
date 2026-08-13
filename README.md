@@ -44,25 +44,22 @@ Para rodar e conectar o banco de dados PostgreSQL nesta aplicação:
 
 ---
 
-## 🗓️ Diário de Bordo & Processo de Desenvolvimento
 
-### 📍 10/08/2026 — Planejamento, Definição de Arquitetura e Escopo
+### 🗓️ Diário de Bordo & Processo de Desenvolvimento
+
+#### 📅 10/08/2026 — Planejamento, Definição de Arquitetura e Escopo
 * **Análise de Requisitos:** Leitura do desafio Verzel, definição do escopo funcional e não funcional.
 * **Acessibilidade e Inclusão:** Definição das funcionalidades inclusivas (Modo Autismo/Focado, Baixa Visão/Idosos, Sensibilidade à Luz e Navegação Didática para Não Alfabetizados).
 * **Decisões de Segurança:** Definição do uso de Autenticação em Duas Etapas (2FA) na aba "Meus Ingressos" antes da exibição do QR Code para prevenir clonagens.
 * **Escolha da Stack:** Fechamento definitivo da arquitetura em **React + Next.js (TypeScript) + PostgreSQL** com **Prisma ORM**, priorizando uma execução limpa e deploy unificado na Vercel.
 
-### 📍 11/08/2026 — Configuração Inicial do Ambiente e Projeto
-* Inicialização do projeto no Visual Studio Code com Next.js e TypeScript.
-* Estruturação inicial do repositório e elaboração do `README.md`.
-* Configuração do Tailwind CSS e preparação para a criação das rotas e do modelo de dados no Prisma.
-* Configuração do Banco de Dados: Instalação e inicialização do Prisma ORM com PostgreSQL.
+#### 📅 11/08/2026 — Configuração Inicial do Ambiente e Projeto
+* **Inicialização:** Criação do projeto no Visual Studio Code com Next.js e TypeScript.
+* **Repositório:** Estruturação inicial e elaboração da documentação no `README.md`.
+* **Estilização e Estrutura:** Configuração do Tailwind CSS e preparação para a criação das rotas e do modelo de dados no Prisma.
+* **Configuração do Banco:** Instalação e inicialização do Prisma ORM com PostgreSQL.
 
-
----
-
-## 📅 12/08/2026 — Modelagem das Tabelas (Schema Prisma), Migrations e Configuração de Testes
-
+#### 📅 12/08/2026 — Modelagem das Tabelas (Schema Prisma), Migrations e Configuração de Testes
 * **Modelagem de Dados:** Tabelas `User`, `Event`, `Ticket` e `Validation` criadas no Prisma Schema.
 * **Banco de Dados:** Instância PostgreSQL configurada com sucesso no Supabase.
 * **Migrations:** Estrutura gerada e sincronizada no banco em nuvem.
@@ -72,7 +69,7 @@ Para rodar e conectar o banco de dados PostgreSQL nesta aplicação:
 
 
 
----
+
 
 ## 💡 Recursos Diferenciais de Acessibilidade & UX
 * **Acessibilidade Neurodivergente (Modo Focado):** Redução de ruído visual para navegação simplificada por pessoas dentro do espectro autista ou TDAH.
