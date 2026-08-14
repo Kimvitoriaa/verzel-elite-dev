@@ -24,26 +24,14 @@ export default function MeusIngressosPage() {
   useEffect(() => {
     async function loadTickets() {
       try {
-        const res = await fetch('/api/tickets/purchase');
+        const userStr = localStorage.getItem('usuario');
+        const user = userStr ? JSON.parse(userStr) : null;
+        const url = user?.id ? `/api/tickets/purchase?userId=${user.id}` : '/api/tickets/purchase';
+
+        const res = await fetch(url);
         if (res.ok) {
           const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            setTickets(data);
-          } else {
-            // Fallback com o ingresso emitido de demonstração
-            setTickets([
-              {
-                id: 'tkt-elite-2026',
-                qrCode: 'TICKET-ELITE-2026-VAL',
-                seat: 'A3',
-                event: {
-                  title: 'Rock in Rio Elite - Palco Mundo',
-                  date: '2026-09-18T20:00:00.000Z',
-                  location: 'Cidade do Rock - Rio de Janeiro',
-                },
-              },
-            ]);
-          }
+          setTickets(Array.isArray(data) ? data : []);
         }
       } catch (err) {
         console.error('Erro ao carregar ingressos:', err);
@@ -70,14 +58,23 @@ export default function MeusIngressosPage() {
               ← Voltar ao Catálogo
             </Link>
             <h1 className="text-3xl font-extrabold text-white mt-2">Meus Ingressos</h1>
-            <p className="text-xs text-zinc-400 mt-1">Apresente seu código na portaria para validação</p>
+            <p className="text-xs text-zinc-400 mt-1">Apresente seu QR Code na portaria para validação</p>
           </div>
         </div>
 
         {loading ? (
           <div className="text-center py-16 text-zinc-500 text-xs animate-pulse">Carregando ingressos...</div>
         ) : tickets.length === 0 ? (
-          <div className="text-center py-16 text-zinc-500 text-xs">Nenhum ingresso encontrado.</div>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-12 text-center text-zinc-400">
+            <p className="text-base font-semibold text-white mb-1">Nenhum ingresso encontrado</p>
+            <p className="text-xs text-zinc-400 mb-6">Você ainda não adquiriu nenhum ingresso para os eventos disponíveis.</p>
+            <Link
+              href="/"
+              className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold py-2.5 px-6 rounded-xl transition"
+            >
+              Explorar Catálogo
+            </Link>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {tickets.map((t) => (
@@ -93,12 +90,13 @@ export default function MeusIngressosPage() {
                     <span className="text-xs font-mono text-zinc-400">Assento: <strong className="text-white">{t.seat || 'Geral'}</strong></span>
                   </div>
 
-                  <h2 className="text-lg font-bold text-white">{t.event?.title}</h2>
-                  <p className="text-xs text-zinc-400 mt-1">📍 {t.event?.location}</p>
-                  <p className="text-xs text-zinc-400">📅 {new Date(t.event?.date).toLocaleDateString('pt-BR')}</p>
+                  <h2 className="text-lg font-bold text-white">{t.event?.title || 'Evento'}</h2>
+                  <p className="text-xs text-zinc-400 mt-1">📍 {t.event?.location || 'Local'}</p>
+                  <p className="text-xs text-zinc-400">
+                    📅 {t.event?.date ? new Date(t.event.date).toLocaleDateString('pt-BR') : ''}
+                  </p>
                 </div>
 
-                {/* QR Code Real Gerado Dinamicamente via API aberta de QR */}
                 <div className="my-6 flex flex-col items-center justify-center p-4 bg-white rounded-2xl">
                   <img
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(t.qrCode)}`}
@@ -115,7 +113,7 @@ export default function MeusIngressosPage() {
                   onClick={() => handleShare(t.qrCode, t.id)}
                   className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold py-2.5 rounded-xl border border-zinc-700 transition flex items-center justify-center gap-2"
                 >
-                  {copiedId === t.id ? '✓ Link copiado para a área de transferência!' : '🔗 Compartilhar Link do Ingresso'}
+                  {copiedId === t.id ? '✓ Link copiado!' : '🔗 Compartilhar Link do Ingresso'}
                 </button>
               </div>
             ))}

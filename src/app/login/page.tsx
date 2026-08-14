@@ -23,7 +23,6 @@ export default function LoginPage() {
 
     try {
       if (isRegister) {
-        // Fluxo de Cadastro
         const res = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -31,12 +30,27 @@ export default function LoginPage() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Erro ao realizar cadastro.');
+        
+        // Faz login automático após cadastro com sucesso
+        const loginRes = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, senha }),
+        });
+        const loginData = await loginRes.json();
+        if (loginRes.ok) {
+          localStorage.setItem('token', loginData.token);
+          localStorage.setItem('usuario', JSON.stringify(loginData.usuario));
+          if (loginData.usuario.papel === 'ORGANIZADOR') router.push('/organizador');
+          else if (loginData.usuario.papel === 'PORTARIA') router.push('/portaria');
+          else router.push('/');
+          return;
+        }
         setIsRegister(false);
         setLoading(false);
         return;
       }
 
-      // Fluxo de Login
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -49,9 +63,9 @@ export default function LoginPage() {
       localStorage.setItem('token', data.token);
       localStorage.setItem('usuario', JSON.stringify(data.usuario));
 
-      if (data.usuario.papel === 'ORGANIZADOR') {
+      if (data.usuario.papel === 'ORGANIZADOR' || data.usuario.role === 'ORGANIZADOR') {
         router.push('/organizador');
-      } else if (data.usuario.papel === 'PORTARIA') {
+      } else if (data.usuario.papel === 'PORTARIA' || data.usuario.role === 'PORTARIA') {
         router.push('/portaria');
       } else {
         router.push('/');
@@ -75,7 +89,7 @@ export default function LoginPage() {
           </h1>
           <p className="text-xs text-zinc-400 mt-1">
             {isRegister
-              ? 'Preencha seus dados para se cadastrar'
+              ? 'Preencha seus dados para começar'
               : 'Entre com suas credenciais para continuar'}
           </p>
         </div>
@@ -88,7 +102,7 @@ export default function LoginPage() {
                 <input
                   type="text"
                   required
-                  placeholder="Seu nome"
+                  placeholder="Seu nome completo"
                   value={nome}
                   onChange={(e) => setNome(e.target.value)}
                   className="w-full mt-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 transition"
@@ -135,7 +149,7 @@ export default function LoginPage() {
           </div>
 
           {erro && (
-            <div className="p-3 bg-red-950/80 border border-red-800 text-red-300 rounded-xl text-xs">
+            <div className="p-3 bg-red-950 border border-red-800 text-red-300 rounded-xl text-xs">
               ⚠️ {erro}
             </div>
           )}

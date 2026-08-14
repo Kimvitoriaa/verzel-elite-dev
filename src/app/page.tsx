@@ -12,7 +12,6 @@ interface EventItem {
   date: string;
   location: string;
   totalTickets: number;
-  bannerUrl?: string;
 }
 
 export default function HomePage() {
@@ -26,7 +25,7 @@ export default function HomePage() {
     if (userStr) {
       try {
         setUsuario(JSON.parse(userStr));
-      } catch (e) {}
+      } catch {}
     }
 
     async function loadEvents() {
@@ -64,34 +63,39 @@ export default function HomePage() {
               🎟️ Verzel Elite Events
             </h1>
             <p className="text-sm text-zinc-400 mt-1">
-              Catálogo sincronizado com a API externa (TMDb)[cite: 1].
+              Plataforma de eventos, ingressos e portaria integrada.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            <Link
-              href="/organizador"
-              className="bg-indigo-950/80 hover:bg-indigo-900 text-indigo-300 text-xs font-bold py-2.5 px-4 rounded-xl border border-indigo-700/50 transition"
-            >
-              👑 Painel Organizador
-            </Link>
+            {usuario?.papel === 'ORGANIZADOR' || usuario?.role === 'ORGANIZADOR' ? (
+              <Link
+                href="/organizador"
+                className="bg-indigo-950 hover:bg-indigo-900 text-indigo-300 text-xs font-bold py-2.5 px-4 rounded-xl border border-indigo-700/50 transition"
+              >
+                👑 Painel Organizador
+              </Link>
+            ) : null}
+
             <Link
               href="/ingressos"
               className="bg-zinc-800 hover:bg-zinc-700 text-xs font-bold py-2.5 px-4 rounded-xl border border-zinc-700 transition"
             >
               🎟️ Meus Ingressos
             </Link>
+
             <Link
               href="/portaria"
               className="bg-purple-600 hover:bg-purple-500 text-xs font-bold py-2.5 px-4 rounded-xl transition"
             >
               🚪 Portaria 2D
             </Link>
+
             {usuario ? (
               <button
                 type="button"
                 onClick={handleLogout}
-                className="bg-red-950/80 hover:bg-red-900 text-red-300 text-xs font-bold py-2.5 px-3 rounded-xl border border-red-800/60 transition"
+                className="bg-red-950 hover:bg-red-900 text-red-300 text-xs font-bold py-2.5 px-3 rounded-xl border border-red-800/60 transition"
               >
                 Sair ({usuario.nome ? usuario.nome.split(' ')[0] : 'Conta'})
               </button>
@@ -100,26 +104,24 @@ export default function HomePage() {
                 href="/login"
                 className="bg-zinc-100 hover:bg-white text-black text-xs font-extrabold py-2.5 px-4 rounded-xl transition shadow-lg"
               >
-                👤 Login
+                👤 Entrar
               </Link>
             )}
           </div>
         </header>
 
-        {/* Barra de Busca */}
         <div className="mb-8">
           <input
             type="text"
-            placeholder="🔍 Buscar filme ou show pelo título..."
+            placeholder="🔍 Buscar evento pelo título..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-3 text-sm focus:outline-none focus:border-purple-500 transition text-zinc-200"
           />
         </div>
 
-        {/* Lista de Eventos */}
         {loading ? (
-          <div className="text-center py-20 text-zinc-500 text-sm">Carregando catálogo...</div>
+          <div className="text-center py-20 text-zinc-500 text-sm animate-pulse">Carregando catálogo...</div>
         ) : filteredEvents.length === 0 ? (
           <div className="text-center py-20 text-zinc-500 text-sm">
             Nenhum evento encontrado no momento.
