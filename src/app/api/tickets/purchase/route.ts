@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     const client = prisma as any;
     const qrCode = `TICKET-${Math.random().toString(36).substring(2, 9).toUpperCase()}-2026`;
 
-    // Localiza um evento válido
+    // Localiza o evento
     let event = null;
     if (client.event) {
       event = await client.event.findUnique({ where: { id: eventId } });
@@ -23,22 +23,30 @@ export async function POST(req: Request) {
       event = await client.evento.findUnique({ where: { id: eventId } });
     }
 
-    // Criação do ticket resiliente
     let ticketCreated = null;
+
     if (client.ticket) {
-      try {
-        ticketCreated = await client.ticket.create({
-          data: {
-            eventId,
-            userId: userId || undefined,
-            seat: seat || 'A1',
-            qrCode,
-            status: 'VALID',
-          },
-          include: { event: true },
-        });
-      } catch {
-        // Se a FK de userId falhar por não existir no banco, cria associando apenas ao evento
+      // 1. Tenta criar associando com o userId (se válido)
+      if (userId) {
+        try {
+          ticketCreated = await client.ticket.create({
+            data: {
+              eventId,
+              userId,
+              seat: seat || 'A1',
+              qrCode,
+              status: 'VALID',
+            },
+            include: { event: true },
+          });
+        } catch {
+          // Se o userId não existir na tabela de User, cria sem a FK
+          ticketCreated = null;
+        }
+      }
+
+      // 2. Se não associou por FK, grava o ticket apenas com o eventId
+      if (!ticketCreated) {
         ticketCreated = await client.ticket.create({
           data: {
             eventId,
@@ -53,7 +61,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(
       {
-        message: 'Pagamento aprovado e ingresso emitido com sucesso!',
+        message: 'Pagamento aprovado e ingresso gerado com sucesso!',
         ticket: ticketCreated || {
           id: qrCode,
           qrCode,
@@ -68,9 +76,9 @@ export async function POST(req: Request) {
       { status: 201 }
     );
   } catch (error: any) {
-    console.error('Erro na compra:', error);
+    console.error('Erro na rota de compra:', error);
     return NextResponse.json(
-      { error: 'Erro interno ao processar compra.' },
+      { error: error?.message || 'Erro interno ao processar compra.' },
       { status: 500 }
     );
   }

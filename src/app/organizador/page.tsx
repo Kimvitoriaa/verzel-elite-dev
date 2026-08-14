@@ -13,6 +13,13 @@ interface CatalogItem {
 }
 
 export default function OrganizadorPage() {
+  const [usuarioLogado, setUsuarioLogado] = useState<any>(null);
+  const [emailLogin, setEmailLogin] = useState('');
+  const [senhaLogin, setSenhaLogin] = useState('');
+  const [loginErro, setLoginErro] = useState<string | null>(null);
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  // Catálogo TMDb e formulário
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [loadingCatalog, setLoadingCatalog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<CatalogItem | null>(null);
@@ -26,6 +33,21 @@ export default function OrganizadorPage() {
   const [feedback, setFeedback] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
 
   useEffect(() => {
+    const userStr = localStorage.getItem('usuario');
+    if (userStr) {
+      try {
+        const u = JSON.parse(userStr);
+        const role = (u.papel || u.role || '').toUpperCase();
+        if (role === 'ORGANIZADOR' || role === 'ORGANIZER') {
+          setUsuarioLogado(u);
+        }
+      } catch {}
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!usuarioLogado) return;
+
     async function loadCatalog() {
       setLoadingCatalog(true);
       try {
@@ -41,7 +63,40 @@ export default function OrganizadorPage() {
       }
     }
     loadCatalog();
-  }, []);
+  }, [usuarioLogado]);
+
+  async function handleOrganizadorLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setLoginErro(null);
+    setLoginLoading(true);
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailLogin, senha: senhaLogin }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Credenciais inválidas.');
+      }
+
+      const role = (data.usuario.papel || data.usuario.role || '').toUpperCase();
+      if (role !== 'ORGANIZADOR' && role !== 'ORGANIZER') {
+        throw new Error('Esta conta não possui permissões de Organizador.');
+      }
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('usuario', JSON.stringify(data.usuario));
+      setUsuarioLogado(data.usuario);
+    } catch (err: any) {
+      setLoginErro(err.message || 'Erro ao realizar login.');
+    } finally {
+      setLoginLoading(false);
+    }
+  }
 
   function handleSelect(item: CatalogItem) {
     setSelectedItem(item);
@@ -65,7 +120,7 @@ export default function OrganizadorPage() {
           date: date ? new Date(date).toISOString() : new Date().toISOString(),
           location,
           totalTickets: Number(totalTickets),
-          organizerId: 'organizador-padrao',
+          organizerId: usuarioLogado?.id,
           bannerUrl: selectedItem?.poster_path
             ? `https://image.tmdb.org/t/p/w500${selectedItem.poster_path}`
             : null,
@@ -90,6 +145,71 @@ export default function OrganizadorPage() {
     }
   }
 
+  // Se não estiver logado como organizador, exibe a tela de login restrita
+  if (!usuarioLogado) {
+    return (
+      <main className="min-h-screen bg-[#09090b] text-zinc-100 flex items-center justify-center p-4">
+        <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-3xl p-8 shadow-2xl">
+          <div className="text-center mb-6">
+            <Link href="/" className="text-xs font-semibold text-zinc-400 hover:text-zinc-200 transition">
+              ← Voltar ao Início
+            </Link>
+            <h1 className="text-2xl font-bold text-white mt-4">Acesso do Organizador</h1>
+            <p className="text-xs text-zinc-400 mt-1">
+              Informe seu e-mail e senha de Organizador cadastrado para acessar o painel.
+            </p>
+          </div>
+
+          <form onSubmit={handleOrganizadorLogin} className="space-y-4">
+            <div>
+              <label className="text-xs font-medium text-zinc-300">E-mail do Organizador</label>
+              <input
+                type="email"
+                required
+                placeholder="organizador@exemplo.com"
+                value={emailLogin}
+                onChange={(e) => setEmailLogin(e.target.value)}
+                className="w-full mt-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 transition"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-zinc-300">Senha</label>
+              <input
+                type="password"
+                required
+                placeholder="••••••••"
+                value={senhaLogin}
+                onChange={(e) => setSenhaLogin(e.target.value)}
+                className="w-full mt-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 transition"
+              />
+            </div>
+
+            {loginErro && (
+              <div className="p-3 bg-red-950/80 border border-red-800 text-red-300 rounded-xl text-xs">
+                ⚠️ {loginErro}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loginLoading}
+              className="w-full bg-purple-600 hover:bg-purple-500 disabled:bg-purple-800 text-white font-bold py-3 rounded-xl text-xs transition shadow-lg shadow-purple-600/30"
+            >
+              {loginLoading ? 'Validando Acesso...' : 'Entrar no Painel do Organizador'}
+            </button>
+          </form>
+
+          <div className="text-center mt-6 border-t border-zinc-800 pt-4">
+            <Link href="/login" className="text-xs text-purple-400 hover:text-purple-300 font-medium">
+              Não tem conta de Organizador? Cadastre-se aqui
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-[#09090b] text-zinc-100 p-6 md:p-12">
       <div className="max-w-6xl mx-auto">
@@ -101,23 +221,27 @@ export default function OrganizadorPage() {
             <h1 className="text-3xl font-extrabold text-white mt-2">Painel do Organizador</h1>
             <p className="text-xs text-zinc-400 mt-1">Criação e gerenciamento de eventos</p>
           </div>
+          <button
+            onClick={() => {
+              localStorage.removeItem('token');
+              localStorage.removeItem('usuario');
+              setUsuarioLogado(null);
+            }}
+            className="text-xs text-red-400 hover:text-red-300 bg-red-950/40 border border-red-800/40 px-3 py-1.5 rounded-lg transition"
+          >
+            Sair do Painel
+          </button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-6">
             <h2 className="text-sm font-bold text-white mb-2">1. Selecionar do Catálogo de Atrações</h2>
-            <p className="text-xs text-zinc-400 mb-4">
-              Escolha uma atração para preencher automaticamente as informações.
-            </p>
+            <p className="text-xs text-zinc-400 mb-4">Escolha uma atração para preencher automaticamente as informações.</p>
 
             {loadingCatalog ? (
-              <div className="text-center py-12 text-zinc-500 text-xs animate-pulse">
-                Carregando catálogo...
-              </div>
+              <div className="text-center py-12 text-zinc-500 text-xs animate-pulse">Carregando catálogo...</div>
             ) : catalog.length === 0 ? (
-              <div className="text-center py-12 text-zinc-500 text-xs">
-                Nenhuma atração disponível no momento.
-              </div>
+              <div className="text-center py-12 text-zinc-500 text-xs">Nenhuma atração disponível no momento.</div>
             ) : (
               <div className="space-y-3 max-h-[520px] overflow-y-auto pr-2">
                 {catalog.map((item) => (
@@ -132,9 +256,7 @@ export default function OrganizadorPage() {
                   >
                     <div>
                       <h3 className="text-xs font-bold text-white">{item.title}</h3>
-                      <p className="text-[11px] text-zinc-400 line-clamp-2 mt-1">
-                        {item.overview || 'Sem descrição.'}
-                      </p>
+                      <p className="text-[11px] text-zinc-400 line-clamp-2 mt-1">{item.overview || 'Sem descrição.'}</p>
                     </div>
                     <button
                       type="button"
@@ -161,7 +283,7 @@ export default function OrganizadorPage() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Nome do evento"
-                  className="w-full mt-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 transition"
+                  className="w-full mt-1 bg-zinc-800/80 border border-zinc-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 transition"
                 />
               </div>
 
@@ -173,7 +295,7 @@ export default function OrganizadorPage() {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Informações sobre a atração..."
-                  className="w-full mt-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 transition"
+                  className="w-full mt-1 bg-zinc-800/80 border border-zinc-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 transition"
                 />
               </div>
 
