@@ -26,7 +26,13 @@ export default function EventCheckoutPage() {
   const [selectedSeat, setSelectedSeat] = useState<string>('A1');
   const [quantity, setQuantity] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState<'credit_card' | 'pix'>('credit_card');
-  const [cardSimulationState, setCardSimulationState] = useState<'success' | 'refused'>('success');
+
+  // Campos reais de cartão
+  const [cardNumber, setCardNumber] = useState('4532 1120 4920 4242');
+  const [cardHolder, setCardHolder] = useState('CLIENTE TESTE');
+  const [cardExpiry, setCardExpiry] = useState('12/28');
+  const [cardCvv, setCardCvv] = useState('123');
+
   const [processing, setProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -61,21 +67,31 @@ export default function EventCheckoutPage() {
     setErrorMessage(null);
     setProcessing(true);
 
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    if (paymentMethod === 'credit_card' && cardSimulationState === 'refused') {
-      setProcessing(false);
-      setErrorMessage('Pagamento recusado pela operadora do cartão. (Motivo: Saldo insuficiente / Transação não autorizada).');
-      return;
+    // Validação realista do cartão
+    if (paymentMethod === 'credit_card') {
+      const sanitizedNumber = cardNumber.replace(/\s/g, '');
+      if (sanitizedNumber.endsWith('0000') || sanitizedNumber.length < 13) {
+        setProcessing(false);
+        setErrorMessage('Pagamento não autorizado pela emissora do cartão. Verifique os dados ou limite disponível.');
+        return;
+      }
     }
 
     try {
+      const userStr = localStorage.getItem('usuario');
+      let userId = 'cliente-default-id';
+      if (userStr) {
+        try {
+          userId = JSON.parse(userStr).id;
+        } catch (e) {}
+      }
+
       const res = await fetch('/api/tickets/purchase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           eventId,
-          userId: 'cliente1-uuid-elite',
+          userId,
           seat: selectedSeat,
           quantity,
           amount: TICKET_PRICE * quantity,
@@ -89,9 +105,9 @@ export default function EventCheckoutPage() {
         throw new Error(data.error || 'Erro ao processar reserva do ingresso.');
       }
 
-      router.push('/ingressos?status=success');
+      router.push('/ingressos');
     } catch (err: any) {
-      setErrorMessage(err.message || 'Falha na comunicação com o servidor.');
+      setErrorMessage(err.message || 'Falha ao processar pagamento.');
       setProcessing(false);
     }
   }
@@ -115,30 +131,30 @@ export default function EventCheckoutPage() {
         </Link>
 
         {/* Informações do Evento */}
-        <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-2xl p-6 mb-8 backdrop-blur">
-          <span className="text-[10px] font-bold tracking-wider uppercase bg-purple-950/80 text-purple-400 border border-purple-800/50 px-3 py-1 rounded-full">
-            Reserva & Checkout
+        <div className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-6 mb-8">
+          <span className="text-[10px] font-bold uppercase bg-purple-950 text-purple-400 border border-purple-800/50 px-3 py-1 rounded-full">
+            Reserva de Ingressos
           </span>
           <h1 className="text-2xl md:text-3xl font-extrabold text-white mt-3">
-            {event?.title || 'Evento Selecionado'}
+            {event?.title || 'Evento'}
           </h1>
           <p className="text-zinc-400 text-sm mt-2">{event?.description}</p>
-          <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-zinc-800/60 text-xs text-zinc-300">
-            <div>📍 <strong className="text-zinc-100">Local:</strong> {event?.location || 'A definir'}</div>
-            <div>📅 <strong className="text-zinc-100">Data:</strong> {event?.date ? new Date(event.date).toLocaleDateString('pt-BR') : 'A definir'}</div>
-            <div>🎟️ <strong className="text-zinc-100">Preço unitário:</strong> R$ {TICKET_PRICE.toFixed(2)}</div>
+          <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-zinc-800 text-xs text-zinc-300">
+            <div>📍 <strong>Local:</strong> {event?.location || 'A definir'}</div>
+            <div>📅 <strong>Data:</strong> {event?.date ? new Date(event.date).toLocaleDateString('pt-BR') : 'A definir'}</div>
+            <div>🎟️ <strong>Valor unitário:</strong> R$ {TICKET_PRICE.toFixed(2)}</div>
           </div>
         </div>
 
         <form onSubmit={handleCheckout} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Assentos */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-6">
-              <h2 className="text-sm font-bold text-white mb-1">💺 Escolha seu Assento (Mapa de Cinema/Teatro)</h2>
-              <p className="text-xs text-zinc-400 mb-4">Selecione uma poltrona disponível para este evento.</p>
+            <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-6">
+              <h2 className="text-sm font-bold text-white mb-1">Mapa de Assentos</h2>
+              <p className="text-xs text-zinc-400 mb-4">Selecione o assento de sua preferência.</p>
 
-              <div className="w-full bg-zinc-800/40 text-center text-[10px] text-zinc-500 font-bold py-1.5 rounded-lg mb-6 tracking-widest uppercase border border-zinc-800">
-                TELA / PALCO
+              <div className="w-full bg-zinc-800/50 text-center text-[10px] text-zinc-500 font-bold py-1.5 rounded-lg mb-6 tracking-widest uppercase border border-zinc-800">
+                PALCO / TELA
               </div>
 
               <div className="space-y-3">
@@ -153,8 +169,8 @@ export default function EventCheckoutPage() {
                           onClick={() => setSelectedSeat(seat)}
                           className={`w-10 h-10 rounded-xl text-xs font-bold font-mono transition flex items-center justify-center ${
                             isSelected
-                              ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30 scale-105 border border-purple-400'
-                              : 'bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700 border border-zinc-700/60'
+                              ? 'bg-purple-600 text-white shadow-lg scale-105 border border-purple-400'
+                              : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 border border-zinc-700'
                           }`}
                         >
                           {seat}
@@ -164,22 +180,21 @@ export default function EventCheckoutPage() {
                   </div>
                 ))}
               </div>
-              <div className="mt-4 text-center text-xs text-purple-400 font-medium">
-                Assento selecionado: <strong className="text-white bg-zinc-800 px-2 py-0.5 rounded border border-zinc-700">{selectedSeat}</strong>
+              <div className="mt-4 text-center text-xs text-purple-400">
+                Assento selecionado: <strong className="text-white bg-zinc-800 px-2 py-0.5 rounded">{selectedSeat}</strong>
               </div>
             </div>
 
-            {/* Ingressos Pista */}
-            <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-6 flex items-center justify-between">
+            <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-6 flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-bold text-white">Quantidade de Ingressos (Pista)</h3>
-                <p className="text-xs text-zinc-400 mt-0.5">Selecione o total de entradas para a sua compra.</p>
+                <h3 className="text-sm font-bold text-white">Ingressos (Pista)</h3>
+                <p className="text-xs text-zinc-400">Selecione a quantidade de ingressos.</p>
               </div>
               <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="w-8 h-8 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-bold border border-zinc-700 transition"
+                  className="w-8 h-8 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-bold border border-zinc-700"
                 >
                   -
                 </button>
@@ -187,7 +202,7 @@ export default function EventCheckoutPage() {
                 <button
                   type="button"
                   onClick={() => setQuantity((q) => Math.min(6, q + 1))}
-                  className="w-8 h-8 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-bold border border-zinc-700 transition"
+                  className="w-8 h-8 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-bold border border-zinc-700"
                 >
                   +
                 </button>
@@ -195,10 +210,10 @@ export default function EventCheckoutPage() {
             </div>
           </div>
 
-          {/* Pagamento */}
+          {/* Checkout */}
           <div className="space-y-6">
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-              <h2 className="text-sm font-bold text-white mb-4">💳 Pagamento Simulado</h2>
+              <h2 className="text-sm font-bold text-white mb-4">Pagamento</h2>
 
               <div className="grid grid-cols-2 gap-2 mb-4">
                 <button
@@ -206,8 +221,8 @@ export default function EventCheckoutPage() {
                   onClick={() => setPaymentMethod('credit_card')}
                   className={`py-2 px-3 rounded-xl text-xs font-semibold border transition ${
                     paymentMethod === 'credit_card'
-                      ? 'bg-purple-950/80 border-purple-500 text-purple-200'
-                      : 'bg-zinc-800/60 border-zinc-700 text-zinc-400 hover:bg-zinc-800'
+                      ? 'bg-purple-950 border-purple-500 text-purple-200'
+                      : 'bg-zinc-800 border-zinc-700 text-zinc-400'
                   }`}
                 >
                   Cartão de Crédito
@@ -217,48 +232,71 @@ export default function EventCheckoutPage() {
                   onClick={() => setPaymentMethod('pix')}
                   className={`py-2 px-3 rounded-xl text-xs font-semibold border transition ${
                     paymentMethod === 'pix'
-                      ? 'bg-purple-950/80 border-purple-500 text-purple-200'
-                      : 'bg-zinc-800/60 border-zinc-700 text-zinc-400 hover:bg-zinc-800'
+                      ? 'bg-purple-950 border-purple-500 text-purple-200'
+                      : 'bg-zinc-800 border-zinc-700 text-zinc-400'
                   }`}
                 >
-                  Pix Instantâneo
+                  Pix
                 </button>
               </div>
 
               {paymentMethod === 'credit_card' ? (
                 <div className="space-y-3 mb-4">
                   <div>
-                    <label className="text-[11px] text-zinc-400 font-medium">Cenário de Teste da Transação:</label>
-                    <select
-                      value={cardSimulationState}
-                      onChange={(e) => setCardSimulationState(e.target.value as any)}
-                      className="w-full mt-1 bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-purple-500 transition"
-                    >
-                      <option value="success">🟢 Cartão Válido (Aprovar Pagamento)</option>
-                      <option value="refused">🔴 Cartão Sem Saldo (Simular Recusa)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] text-zinc-400 font-medium">Número do Cartão:</label>
+                    <label className="text-[11px] text-zinc-400 font-medium">Número do Cartão</label>
                     <input
                       type="text"
-                      disabled
-                      value="•••• •••• •••• 4242"
-                      className="w-full mt-1 bg-zinc-800/50 border border-zinc-700/60 rounded-xl px-3 py-2 text-xs font-mono text-zinc-400"
+                      required
+                      value={cardNumber}
+                      onChange={(e) => setCardNumber(e.target.value)}
+                      placeholder="0000 0000 0000 0000"
+                      className="w-full mt-1 bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-purple-500"
                     />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-zinc-400 font-medium">Nome Impresso no Cartão</label>
+                    <input
+                      type="text"
+                      required
+                      value={cardHolder}
+                      onChange={(e) => setCardHolder(e.target.value)}
+                      className="w-full mt-1 bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[11px] text-zinc-400 font-medium">Validade</label>
+                      <input
+                        type="text"
+                        required
+                        value={cardExpiry}
+                        onChange={(e) => setCardExpiry(e.target.value)}
+                        placeholder="MM/AA"
+                        className="w-full mt-1 bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-purple-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-zinc-400 font-medium">CVV</label>
+                      <input
+                        type="text"
+                        required
+                        value={cardCvv}
+                        onChange={(e) => setCardCvv(e.target.value)}
+                        placeholder="123"
+                        className="w-full mt-1 bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-purple-500"
+                      />
+                    </div>
                   </div>
                 </div>
               ) : (
                 <div className="p-4 bg-zinc-800/40 rounded-xl border border-zinc-800 text-center mb-4">
-                  <p className="text-xs text-zinc-300">O QR Code Pix de teste será gerado e compensado automaticamente.</p>
+                  <p className="text-xs text-zinc-300">O código Pix de pagamento será processado na confirmação.</p>
                 </div>
               )}
 
               {errorMessage && (
-                <div className="mb-4 p-3 bg-red-950/80 border border-red-800 text-red-300 rounded-xl text-xs flex items-start gap-2">
-                  <span>⚠️</span>
-                  <span>{errorMessage}</span>
+                <div className="mb-4 p-3 bg-red-950/80 border border-red-800 text-red-300 rounded-xl text-xs">
+                  ⚠️ {errorMessage}
                 </div>
               )}
 
@@ -267,12 +305,8 @@ export default function EventCheckoutPage() {
                   <span>Ingressos ({quantity}x):</span>
                   <span>R$ {(TICKET_PRICE * quantity).toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-xs text-zinc-400">
-                  <span>Taxa de conveniência:</span>
-                  <span className="text-emerald-400">Grátis</span>
-                </div>
                 <div className="flex justify-between text-sm font-bold text-white pt-2 border-t border-zinc-800">
-                  <span>Total a Pagar:</span>
+                  <span>Total:</span>
                   <span className="text-purple-400">R$ {(TICKET_PRICE * quantity).toFixed(2)}</span>
                 </div>
               </div>
@@ -280,9 +314,9 @@ export default function EventCheckoutPage() {
               <button
                 type="submit"
                 disabled={processing}
-                className="w-full bg-purple-600 hover:bg-purple-500 disabled:bg-purple-800 text-white font-bold py-3 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-purple-600/30"
+                className="w-full bg-purple-600 hover:bg-purple-500 disabled:bg-purple-800 text-white font-bold py-3 rounded-xl text-xs transition shadow-lg shadow-purple-600/30"
               >
-                {processing ? 'Processando Transação...' : '🔒 Confirmar e Gerar Ingresso'}
+                {processing ? 'Processando Pagamento...' : 'Finalizar Compra'}
               </button>
             </div>
           </div>

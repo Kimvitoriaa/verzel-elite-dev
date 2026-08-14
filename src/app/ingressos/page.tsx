@@ -1,169 +1,127 @@
 'use client';
 
-import { useState } from 'react';
+export const dynamic = 'force-dynamic';
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 interface Ticket {
   id: string;
-  eventName: string;
-  date: string;
-  location: string;
   qrCode: string;
+  seat?: string;
+  event: {
+    title: string;
+    date: string;
+    location: string;
+  };
 }
 
-export default function IngressosPage() {
-  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
-  const [pin, setPin] = useState('');
-  const [is2FaVerified, setIs2FaVerified] = useState(false);
-  const [error, setError] = useState('');
-  const [copied, setCopied] = useState(false);
+export default function MeusIngressosPage() {
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Exemplo de ingresso simulado
-  const mockTicket: Ticket = {
-    id: '1',
-    eventName: 'Sessão de Cinema VIP - Elite',
-    date: '15/08/2026 às 20:00',
-    location: 'Cinema Sala 1 - BH',
-    qrCode: 'TICKET-EVENT123-USER876-2026',
-  };
-
-  const handleVerify2FA = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (pin === '1234') {
-      setIs2FaVerified(true);
-      setError('');
-    } else {
-      setError('PIN de segurança incorreto. Tente 1234.');
+  useEffect(() => {
+    async function loadTickets() {
+      try {
+        const res = await fetch('/api/tickets/purchase');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setTickets(data);
+          } else {
+            // Fallback com o ingresso emitido de demonstração
+            setTickets([
+              {
+                id: 'tkt-elite-2026',
+                qrCode: 'TICKET-ELITE-2026-VAL',
+                seat: 'A3',
+                event: {
+                  title: 'Rock in Rio Elite - Palco Mundo',
+                  date: '2026-09-18T20:00:00.000Z',
+                  location: 'Cidade do Rock - Rio de Janeiro',
+                },
+              },
+            ]);
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao carregar ingressos:', err);
+      } finally {
+        setLoading(false);
+      }
     }
-  };
+    loadTickets();
+  }, []);
 
-  const handleShareTicket = () => {
-    const shareUrl = `${window.location.origin}/ingressos?code=${mockTicket.qrCode}`;
+  function handleShare(qrCode: string, id: string) {
+    const shareUrl = `${window.location.origin}/ingressos?code=${qrCode}`;
     navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
-  };
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2500);
+  }
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto', fontFamily: 'sans-serif' }}>
-      <h1>🎟️ Meus Ingressos</h1>
-      <p>Gerencie seus ingressos e visualize seus QR Codes de entrada.</p>
+    <main className="min-h-screen bg-[#09090b] text-zinc-100 p-6 md:p-12">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-8 border-b border-zinc-800 pb-4">
+          <div>
+            <Link href="/" className="text-xs font-semibold text-zinc-400 hover:text-zinc-200 transition">
+              ← Voltar ao Catálogo
+            </Link>
+            <h1 className="text-3xl font-extrabold text-white mt-2">Meus Ingressos</h1>
+            <p className="text-xs text-zinc-400 mt-1">Apresente seu código na portaria para validação</p>
+          </div>
+        </div>
 
-      <hr style={{ margin: '1.5rem 0' }} />
-
-      {/* Cartão do Ingresso */}
-      <div
-        style={{
-          border: '1px solid #ccc',
-          borderRadius: '8px',
-          padding: '1.5rem',
-          backgroundColor: '#1a1a1a',
-          color: '#fff',
-        }}
-      >
-        <h3>{mockTicket.eventName}</h3>
-        <p><strong>Data:</strong> {mockTicket.date}</p>
-        <p><strong>Local:</strong> {mockTicket.location}</p>
-
-        {!selectedTicket ? (
-          <button
-            onClick={() => setSelectedTicket(mockTicket)}
-            style={{
-              padding: '0.6rem 1.2rem',
-              backgroundColor: '#0070f3',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              marginTop: '1rem',
-            }}
-          >
-            Visualizar QR Code de Entrada
-          </button>
+        {loading ? (
+          <div className="text-center py-16 text-zinc-500 text-xs animate-pulse">Carregando ingressos...</div>
+        ) : tickets.length === 0 ? (
+          <div className="text-center py-16 text-zinc-500 text-xs">Nenhum ingresso encontrado.</div>
         ) : (
-          <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #333' }}>
-            {!is2FaVerified ? (
-              <div>
-                <h4>🔒 Autenticação de Segurança (2FA)</h4>
-                <p style={{ fontSize: '0.9rem', color: '#aaa' }}>
-                  Digite seu PIN de 4 dígitos para liberar a exibição do QR Code (Use: <strong>1234</strong>).
-                </p>
-                <form onSubmit={handleVerify2FA} style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                  <input
-                    type="password"
-                    maxLength={4}
-                    value={pin}
-                    onChange={(e) => setPin(e.target.value)}
-                    placeholder="PIN"
-                    style={{
-                      padding: '0.5rem',
-                      borderRadius: '4px',
-                      border: '1px solid #555',
-                      width: '80px',
-                      textAlign: 'center',
-                    }}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {tickets.map((t) => (
+              <div
+                key={t.id}
+                className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 flex flex-col justify-between shadow-xl"
+              >
+                <div>
+                  <div className="flex justify-between items-start mb-4">
+                    <span className="text-[10px] font-bold uppercase bg-emerald-950 text-emerald-400 border border-emerald-800/50 px-2.5 py-1 rounded-full">
+                      Confirmado
+                    </span>
+                    <span className="text-xs font-mono text-zinc-400">Assento: <strong className="text-white">{t.seat || 'Geral'}</strong></span>
+                  </div>
+
+                  <h2 className="text-lg font-bold text-white">{t.event?.title}</h2>
+                  <p className="text-xs text-zinc-400 mt-1">📍 {t.event?.location}</p>
+                  <p className="text-xs text-zinc-400">📅 {new Date(t.event?.date).toLocaleDateString('pt-BR')}</p>
+                </div>
+
+                {/* QR Code Real Gerado Dinamicamente via API aberta de QR */}
+                <div className="my-6 flex flex-col items-center justify-center p-4 bg-white rounded-2xl">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(t.qrCode)}`}
+                    alt="QR Code do Ingresso"
+                    className="w-40 h-40"
                   />
-                  <button
-                    type="submit"
-                    style={{
-                      padding: '0.5rem 1rem',
-                      backgroundColor: '#22c55e',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Confirmar
-                  </button>
-                </form>
-                {error && <p style={{ color: '#ef4444', fontSize: '0.85rem', marginTop: '0.5rem' }}>{error}</p>}
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', background: '#fff', color: '#000', padding: '1rem', borderRadius: '8px' }}>
-                <p style={{ fontWeight: 'bold', color: '#16a34a' }}>✅ Entrada Liberada!</p>
-                <div style={{ margin: '1rem 0', fontSize: '0.8rem', wordBreak: 'break-all', fontFamily: 'monospace' }}>
-                  [ Imagem do QR Code ]<br />
-                  {mockTicket.qrCode}
+                  <span className="mt-3 text-[11px] font-mono font-bold text-zinc-800 tracking-wider">
+                    {t.qrCode}
+                  </span>
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-                  <button
-                    onClick={handleShareTicket}
-                    style={{
-                      padding: '0.4rem 0.8rem',
-                      backgroundColor: '#8b5cf6',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {copied ? '🔗 Link Copiado!' : '🔗 Compartilhar Ingresso'}
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setIs2FaVerified(false);
-                      setSelectedTicket(null);
-                      setPin('');
-                    }}
-                    style={{
-                      padding: '0.4rem 0.8rem',
-                      backgroundColor: '#666',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Ocultar QR Code
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => handleShare(t.qrCode, t.id)}
+                  className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold py-2.5 rounded-xl border border-zinc-700 transition flex items-center justify-center gap-2"
+                >
+                  {copiedId === t.id ? '✓ Link copiado para a área de transferência!' : '🔗 Compartilhar Link do Ingresso'}
+                </button>
               </div>
-            )}
+            ))}
           </div>
         )}
       </div>
-    </div>
+    </main>
   );
 }

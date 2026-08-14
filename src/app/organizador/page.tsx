@@ -5,20 +5,18 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-interface MovieCatalogItem {
+interface CatalogItem {
   id: number;
   title: string;
   overview: string;
   poster_path?: string;
-  release_date?: string;
 }
 
 export default function OrganizadorPage() {
-  const [catalog, setCatalog] = useState<MovieCatalogItem[]>([]);
+  const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [loadingCatalog, setLoadingCatalog] = useState(false);
-  const [selectedMovie, setSelectedMovie] = useState<MovieCatalogItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<CatalogItem | null>(null);
 
-  // Campos do novo evento
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
@@ -28,7 +26,7 @@ export default function OrganizadorPage() {
   const [feedback, setFeedback] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
 
   useEffect(() => {
-    async function loadTmdbCatalog() {
+    async function loadCatalog() {
       setLoadingCatalog(true);
       try {
         const res = await fetch('/api/tmdb/movies');
@@ -37,18 +35,18 @@ export default function OrganizadorPage() {
           setCatalog(Array.isArray(data) ? data : data.results || []);
         }
       } catch (err) {
-        console.error('Erro ao buscar catálogo TMDb:', err);
+        console.error('Erro ao carregar catálogo:', err);
       } finally {
         setLoadingCatalog(false);
       }
     }
-    loadTmdbCatalog();
+    loadCatalog();
   }, []);
 
-  function handleSelectMovie(movie: MovieCatalogItem) {
-    setSelectedMovie(movie);
-    setTitle(movie.title);
-    setDescription(movie.overview);
+  function handleSelect(item: CatalogItem) {
+    setSelectedItem(item);
+    setTitle(item.title);
+    setDescription(item.overview);
     setFeedback(null);
   }
 
@@ -65,11 +63,10 @@ export default function OrganizadorPage() {
           title,
           description,
           date: date || new Date(Date.now() + 86400000 * 7).toISOString(),
-          location: location || 'Arena Elite Hub - Sala Principal',
+          location: location || 'Espaço de Eventos Elite Dev',
           totalTickets: Number(totalTickets),
-          organizerId: 'organizador-uuid-elite',
-          bannerUrl: selectedMovie?.poster_path
-            ? `https://image.tmdb.org/t/p/w500${selectedMovie.poster_path}`
+          bannerUrl: selectedItem?.poster_path
+            ? `https://image.tmdb.org/t/p/w500${selectedItem.poster_path}`
             : null,
         }),
       });
@@ -84,7 +81,7 @@ export default function OrganizadorPage() {
       setDescription('');
       setDate('');
       setLocation('');
-      setSelectedMovie(null);
+      setSelectedItem(null);
     } catch (err: any) {
       setFeedback({ tipo: 'erro', texto: err.message || 'Falha ao salvar evento.' });
     } finally {
@@ -100,36 +97,36 @@ export default function OrganizadorPage() {
             <Link href="/" className="text-xs font-semibold text-zinc-400 hover:text-zinc-200 transition">
               ← Voltar ao Início
             </Link>
-            <h1 className="text-3xl font-extrabold text-white mt-2">👑 Painel do Organizador</h1>
-            <p className="text-xs text-zinc-400 mt-1">Crie e publique eventos a partir da API TMDb externa</p>
+            <h1 className="text-3xl font-extrabold text-white mt-2">Painel do Organizador</h1>
+            <p className="text-xs text-zinc-400 mt-1">Criação e gerenciamento de eventos</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Catálogo TMDb */}
+          {/* Catálogo de Atrações */}
           <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-6">
-            <h2 className="text-sm font-bold text-white mb-2">🎬 1. Escolha uma Atração do Catálogo (TMDb API)</h2>
-            <p className="text-xs text-zinc-400 mb-4">Clique em um item para importar o título e sinopse automaticamente.</p>
+            <h2 className="text-sm font-bold text-white mb-2">1. Selecionar do Catálogo de Atrações</h2>
+            <p className="text-xs text-zinc-400 mb-4">Escolha uma atração para preencher automaticamente as informações.</p>
 
             {loadingCatalog ? (
-              <div className="text-center py-12 text-zinc-500 text-xs animate-pulse">Carregando catálogo da API externa...</div>
+              <div className="text-center py-12 text-zinc-500 text-xs animate-pulse">Carregando catálogo...</div>
             ) : catalog.length === 0 ? (
-              <div className="text-center py-12 text-zinc-500 text-xs">Nenhuma atração encontrada na API.</div>
+              <div className="text-center py-12 text-zinc-500 text-xs">Nenhuma atração disponível no momento.</div>
             ) : (
               <div className="space-y-3 max-h-[520px] overflow-y-auto pr-2">
-                {catalog.map((m) => (
+                {catalog.map((item) => (
                   <div
-                    key={m.id}
-                    onClick={() => handleSelectMovie(m)}
+                    key={item.id}
+                    onClick={() => handleSelect(item)}
                     className={`p-4 rounded-xl border cursor-pointer transition flex items-start justify-between gap-4 ${
-                      selectedMovie?.id === m.id
+                      selectedItem?.id === item.id
                         ? 'bg-purple-950/60 border-purple-500'
                         : 'bg-zinc-800/40 border-zinc-800 hover:border-zinc-700'
                     }`}
                   >
                     <div>
-                      <h3 className="text-xs font-bold text-white">{m.title}</h3>
-                      <p className="text-[11px] text-zinc-400 line-clamp-2 mt-1">{m.overview || 'Sem descrição.'}</p>
+                      <h3 className="text-xs font-bold text-white">{item.title}</h3>
+                      <p className="text-[11px] text-zinc-400 line-clamp-2 mt-1">{item.overview || 'Sem descrição.'}</p>
                     </div>
                     <button
                       type="button"
@@ -143,10 +140,10 @@ export default function OrganizadorPage() {
             )}
           </div>
 
-          {/* Formulário de Criação */}
+          {/* Formulário */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-            <h2 className="text-sm font-bold text-white mb-2">📝 2. Definir Detalhes do Evento</h2>
-            <p className="text-xs text-zinc-400 mb-6">Configure data, local e capacidade máxima de ingressos.</p>
+            <h2 className="text-sm font-bold text-white mb-2">2. Detalhes do Evento</h2>
+            <p className="text-xs text-zinc-400 mb-6">Configure data, local e capacidade de público.</p>
 
             <form onSubmit={handlePublishEvent} className="space-y-4">
               <div>
@@ -156,19 +153,19 @@ export default function OrganizadorPage() {
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Ex: Noite de Cinema Especial"
+                  placeholder="Nome do evento"
                   className="w-full mt-1 bg-zinc-800/80 border border-zinc-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 transition"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-medium text-zinc-300">Descrição / Sinopse</label>
+                <label className="text-xs font-medium text-zinc-300">Descrição</label>
                 <textarea
                   rows={3}
                   required
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Resumo do show ou filme..."
+                  placeholder="Informações sobre a atração..."
                   className="w-full mt-1 bg-zinc-800/80 border border-zinc-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 transition"
                 />
               </div>
@@ -190,7 +187,7 @@ export default function OrganizadorPage() {
                   <input
                     type="number"
                     min={1}
-                    max={500}
+                    max={1000}
                     required
                     value={totalTickets}
                     onChange={(e) => setTotalTickets(Number(e.target.value))}
@@ -200,13 +197,13 @@ export default function OrganizadorPage() {
               </div>
 
               <div>
-                <label className="text-xs font-medium text-zinc-300">Localização / Endereço</label>
+                <label className="text-xs font-medium text-zinc-300">Localização</label>
                 <input
                   type="text"
                   required
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  placeholder="Ex: Cine Elite Dev - Auditório 1"
+                  placeholder="Endereço ou nome do local"
                   className="w-full mt-1 bg-zinc-800/80 border border-zinc-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 transition"
                 />
               </div>
@@ -228,7 +225,7 @@ export default function OrganizadorPage() {
                 disabled={publishing}
                 className="w-full bg-purple-600 hover:bg-purple-500 disabled:bg-purple-800 text-white font-bold py-3 rounded-xl text-xs transition shadow-lg shadow-purple-600/30 mt-4"
               >
-                {publishing ? 'Publicando Evento...' : '🚀 Publicar Evento no Catálogo'}
+                {publishing ? 'Publicando Evento...' : 'Publicar Evento'}
               </button>
             </form>
           </div>
