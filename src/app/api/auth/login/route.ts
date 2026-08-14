@@ -1,63 +1,70 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { prisma } from '@/lib/prisma';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'secreto_super_seguro_dev';
-
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const { email, password } = await request.json();
+    const body = await req.json();
+    const email = body.email;
+    const senha = body.senha || body.password;
 
-    if (!email || !password) {
+    if (!email || !senha) {
       return NextResponse.json(
         { error: 'E-mail e senha são obrigatórios.' },
         { status: 400 }
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    // Busca o usuário pelo e-mail
+    const client = prisma as any;
+    const usuario =
+      (await client.usuario?.findUnique({ where: { email } })) ||
+      (await client.user?.findUnique({ where: { email } }));
 
-    if (!user) {
+    if (!usuario) {
       return NextResponse.json(
         { error: 'Credenciais inválidas.' },
         { status: 401 }
       );
     }
 
-    const passwordMatch = await bcrypt.compare(password, user.password);
+    const hashSenha = usuario.senha || usuario.password;
+    const senhaValida = await bcrypt.compare(senha, hashSenha);
 
-    if (!passwordMatch) {
+    if (!senhaValida) {
       return NextResponse.json(
         { error: 'Credenciais inválidas.' },
         { status: 401 }
       );
     }
 
+    const secret = process.env.JWT_SECRET || 'verzel_elite_dev_secret_key_2026';
     const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
-      JWT_SECRET,
+      {
+        id: usuario.id,
+        email: usuario.email,
+        papel: usuario.papel || usuario.role,
+      },
+      secret,
       { expiresIn: '1d' }
     );
 
-    return NextResponse.json(
-      {
-        message: 'Login realizado com sucesso!',
-        token,
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        },
+    return NextResponse.json({
+      token,
+      usuario: {
+        id: usuario.id,
+        nome: usuario.nome || usuario.name,
+        email: usuario.email,
+        papel: usuario.papel || usuario.role,
       },
-      { status: 200 }
-    );
+    });
   } catch (error) {
+    console.error('Erro no login:', error);
     return NextResponse.json(
-      { error: 'Erro interno ao realizar login.' },
+      { error: 'Erro interno ao processar login.' },
       { status: 500 }
     );
   }
