@@ -5,108 +5,135 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-interface Event {
+interface EventItem {
   id: string;
   title: string;
   description: string;
   date: string;
   location: string;
   totalTickets: number;
+  bannerUrl?: string;
 }
 
 export default function HomePage() {
-  const [events, setEvents] = useState<Event[]>([]);
+  const [events, setEvents] = useState<EventItem[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [usuario, setUsuario] = useState<any>(null);
 
   useEffect(() => {
-    async function fetchEvents() {
+    const userStr = localStorage.getItem('usuario');
+    if (userStr) {
+      try {
+        setUsuario(JSON.parse(userStr));
+      } catch (e) {}
+    }
+
+    async function loadEvents() {
       try {
         const res = await fetch('/api/events');
         if (res.ok) {
           const data = await res.json();
           setEvents(data);
         }
-      } catch (error) {
-        console.error('Erro ao buscar eventos:', error);
+      } catch (err) {
+        console.error('Erro ao buscar eventos:', err);
       } finally {
         setLoading(false);
       }
     }
-    fetchEvents();
+    loadEvents();
   }, []);
+
+  function handleLogout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('usuario');
+    setUsuario(null);
+  }
 
   const filteredEvents = events.filter((event) =>
     event.title.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
-    <main className="min-h-screen bg-black text-white p-6 md:p-12">
+    <main className="min-h-screen bg-[#09090b] text-white p-6 md:p-12">
       <div className="max-w-6xl mx-auto">
-        {/* Header / Banner */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10 border-b border-zinc-800 pb-6">
+        <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 border-b border-zinc-800 pb-6">
           <div>
-            <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">
+            <h1 className="text-3xl font-extrabold tracking-tight text-zinc-100">
               🎟️ Verzel Elite Events
             </h1>
-            <p className="text-zinc-400 text-sm mt-1">
-              Explore o catálogo completo de shows e filmes em cartaz.
+            <p className="text-sm text-zinc-400 mt-1">
+              Catálogo sincronizado com a API externa (TMDb)[cite: 1].
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Link
+              href="/organizador"
+              className="bg-indigo-950/80 hover:bg-indigo-900 text-indigo-300 text-xs font-bold py-2.5 px-4 rounded-xl border border-indigo-700/50 transition"
+            >
+              👑 Painel Organizador
+            </Link>
             <Link
               href="/ingressos"
-              className="bg-zinc-800 hover:bg-zinc-700 text-xs px-4 py-2.5 rounded-lg font-medium transition"
+              className="bg-zinc-800 hover:bg-zinc-700 text-xs font-bold py-2.5 px-4 rounded-xl border border-zinc-700 transition"
             >
               🎟️ Meus Ingressos
             </Link>
             <Link
               href="/portaria"
-              className="bg-purple-600 hover:bg-purple-500 text-xs px-4 py-2.5 rounded-lg font-semibold transition"
+              className="bg-purple-600 hover:bg-purple-500 text-xs font-bold py-2.5 px-4 rounded-xl transition"
             >
-              🏛️ Portaria 2D
+              🚪 Portaria 2D
             </Link>
+            {usuario ? (
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="bg-red-950/80 hover:bg-red-900 text-red-300 text-xs font-bold py-2.5 px-3 rounded-xl border border-red-800/60 transition"
+              >
+                Sair ({usuario.nome ? usuario.nome.split(' ')[0] : 'Conta'})
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                className="bg-zinc-100 hover:bg-white text-black text-xs font-extrabold py-2.5 px-4 rounded-xl transition shadow-lg"
+              >
+                👤 Login
+              </Link>
+            )}
           </div>
-        </div>
+        </header>
 
-        {/* Campo de Busca */}
+        {/* Barra de Busca */}
         <div className="mb-8">
           <input
             type="text"
-            placeholder="🔍 Pesquisar evento por título..."
+            placeholder="🔍 Buscar filme ou show pelo título..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 transition"
+            className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-3 text-sm focus:outline-none focus:border-purple-500 transition text-zinc-200"
           />
         </div>
 
-        {/* Listagem de Eventos */}
+        {/* Lista de Eventos */}
         {loading ? (
-          <div className="text-center py-20 text-zinc-500 text-sm">
-            Carregando eventos do catálogo...
-          </div>
+          <div className="text-center py-20 text-zinc-500 text-sm">Carregando catálogo...</div>
         ) : filteredEvents.length === 0 ? (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-10 text-center text-zinc-400">
-            Nenhum evento encontrado para "{search}".
+          <div className="text-center py-20 text-zinc-500 text-sm">
+            Nenhum evento encontrado no momento.
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredEvents.map((event) => (
               <div
                 key={event.id}
-                className="bg-zinc-900 border border-zinc-800 hover:border-purple-500/50 rounded-2xl p-6 flex flex-col justify-between transition group shadow-lg"
+                className="bg-zinc-900/60 border border-zinc-800 hover:border-zinc-700 rounded-3xl p-5 flex flex-col justify-between transition"
               >
                 <div>
-                  <span className="text-[10px] font-mono uppercase bg-purple-950 text-purple-300 px-2.5 py-1 rounded-full border border-purple-800/40">
-                    Disponível
-                  </span>
-                  <h2 className="text-xl font-bold mt-3 text-zinc-100 group-hover:text-purple-400 transition">
-                    {event.title}
-                  </h2>
-                  <p className="text-xs text-zinc-400 mt-2 line-clamp-3">
-                    {event.description}
-                  </p>
+                  <h2 className="text-lg font-bold text-zinc-100">{event.title}</h2>
+                  <p className="text-xs text-zinc-400 mt-2 line-clamp-3">{event.description}</p>
                 </div>
 
                 <div className="mt-6 border-t border-zinc-800/80 pt-4 space-y-2">
