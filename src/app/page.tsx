@@ -68,14 +68,12 @@ export default function HomePage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            {usuario?.papel === 'ORGANIZADOR' || usuario?.role === 'ORGANIZADOR' ? (
-              <Link
-                href="/organizador"
-                className="bg-indigo-950 hover:bg-indigo-900 text-indigo-300 text-xs font-bold py-2.5 px-4 rounded-xl border border-indigo-700/50 transition"
-              >
-                👑 Painel Organizador
-              </Link>
-            ) : null}
+            <Link
+              href="/organizador"
+              className="bg-indigo-950 hover:bg-indigo-900 text-indigo-300 text-xs font-bold py-2.5 px-4 rounded-xl border border-indigo-700/50 transition"
+            >
+              👑 Painel Organizador
+            </Link>
 
             <Link
               href="/ingressos"
@@ -121,7 +119,9 @@ export default function HomePage() {
         </div>
 
         {loading ? (
-          <div className="text-center py-20 text-zinc-500 text-sm animate-pulse">Carregando catálogo...</div>
+          <div className="text-center py-20 text-zinc-500 text-sm animate-pulse">
+            Carregando catálogo...
+          </div>
         ) : filteredEvents.length === 0 ? (
           <div className="text-center py-20 text-zinc-500 text-sm">
             Nenhum evento encontrado no momento.

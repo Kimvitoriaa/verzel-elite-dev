@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     const name = body.name || body.nome;
     const email = body.email;
     const password = body.password || body.senha;
-    const role = body.role || body.papel || 'CLIENTE';
+    const role = (body.role || body.papel || 'CLIENTE').toUpperCase();
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -19,25 +19,17 @@ export async function POST(req: Request) {
       );
     }
 
+    const hashedPassword = await bcrypt.hash(password, 10);
     const client = prisma as any;
 
-    // Verifica se já existe usuário com esse e-mail
-    const existingUser = client.user
-      ? await client.user.findUnique({ where: { email } })
-      : await client.usuario?.findUnique({ where: { email } });
-
-    if (existingUser) {
-      return NextResponse.json(
-        { error: 'Este e-mail já está cadastrado.' },
-        { status: 400 }
-      );
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    let newUser;
+    // 1. Tenta criar pelo modelo 'user'
     if (client.user) {
-      newUser = await client.user.create({
+      const existing = await client.user.findUnique({ where: { email } });
+      if (existing) {
+        return NextResponse.json({ error: 'Este e-mail já está cadastrado.' }, { status: 400 });
+      }
+
+      const user = await client.user.create({
         data: {
           name,
           email,
@@ -45,8 +37,24 @@ export async function POST(req: Request) {
           role,
         },
       });
-    } else {
-      newUser = await client.usuario.create({
+
+      return NextResponse.json(
+        {
+          message: 'Usuário cadastrado com sucesso!',
+          usuario: { id: user.id, nome: user.name, email: user.email, papel: user.role },
+        },
+        { status: 201 }
+      );
+    }
+
+    // 2. Fallback caso o modelo seja 'usuario'
+    if (client.usuario) {
+      const existing = await client.usuario.findUnique({ where: { email } });
+      if (existing) {
+        return NextResponse.json({ error: 'Este e-mail já está cadastrado.' }, { status: 400 });
+      }
+
+      const user = await client.usuario.create({
         data: {
           nome: name,
           email,
@@ -54,24 +62,21 @@ export async function POST(req: Request) {
           papel: role,
         },
       });
+
+      return NextResponse.json(
+        {
+          message: 'Usuário cadastrado com sucesso!',
+          usuario: { id: user.id, nome: user.nome, email: user.email, papel: user.papel },
+        },
+        { status: 201 }
+      );
     }
 
+    return NextResponse.json({ error: 'Modelo de usuário não configurado no Prisma.' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Erro detalhado no registro:', error);
     return NextResponse.json(
-      {
-        message: 'Usuário cadastrado com sucesso!',
-        usuario: {
-          id: newUser.id,
-          nome: newUser.name || newUser.nome,
-          email: newUser.email,
-          papel: newUser.role || newUser.papel,
-        },
-      },
-      { status: 201 }
-    );
-  } catch (error) {
-    console.error('Erro no cadastro:', error);
-    return NextResponse.json(
-      { error: 'Erro interno ao processar cadastro no banco de dados.' },
+      { error: error?.message || 'Erro interno ao processar cadastro.' },
       { status: 500 }
     );
   }
