@@ -106,7 +106,7 @@ Em conformidade com as orientações do desafio, o uso de IA neste projeto foi c
 * **O que a IA (Gemini) fez:** Atuou exclusivamente como um assistente de organização e planejamento para estruturar o cronograma de 7 dias, formatar este `README.md` e organizar a documentação de decisões técnicas.
 * **O que foi 100% idealizado por mim:** 
   * Toda a arquitetura do projeto e escolha definitiva das tecnologias.
-  * O direcionamento e conceito de Acessibilidade Inclusiva (Modo Autismo/Focado, Baixa Visão/Idosos, Sensibilidade à Luz e Navegação Didática para Não Alfabetizados).
+  * O direcionamento e conceito de Acessibilidade Inclusiva (Modo Autismo/Focado, Baixa Visão/Idosos e Sensibilidade à Luz ).
   * A estratégia de segurança com 2FA na exibição do QR Code na aba "Meus Ingressos".
   * A concepção visual e lógica da Tela de Portaria Interativa (Planta 2D).
   * O código-fonte, regras de negócio e validações da aplicação.
