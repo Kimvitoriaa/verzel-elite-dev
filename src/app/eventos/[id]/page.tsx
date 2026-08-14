@@ -26,6 +26,7 @@ export default function EventCheckoutPage() {
   const [quantity, setQuantity] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState<'credit_card' | 'pix'>('credit_card');
 
+  // Campos de Cartão com formatação
   const [cardNumber, setCardNumber] = useState('4532 1120 4920 4242');
   const [cardHolder, setCardHolder] = useState('CLIENTE TESTE');
   const [cardExpiry, setCardExpiry] = useState('12/28');
@@ -60,10 +61,36 @@ export default function EventCheckoutPage() {
     if (eventId) fetchEvent();
   }, [eventId]);
 
+  function handleCardNumberChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.value.replace(/\D/g, '').slice(0, 16);
+    const formatted = raw.replace(/(\d{4})/g, '$1 ').trim();
+    setCardNumber(formatted);
+  }
+
+  function handleExpiryChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.value.replace(/\D/g, '').slice(0, 4);
+    if (raw.length >= 3) {
+      setCardExpiry(`${raw.slice(0, 2)}/${raw.slice(2, 4)}`);
+    } else {
+      setCardExpiry(raw);
+    }
+  }
+
+  function handleCvvChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4));
+  }
+
   async function handleCheckout(e: React.FormEvent) {
     e.preventDefault();
     setErrorMessage(null);
     setProcessing(true);
+
+    const cleanCard = cardNumber.replace(/\s/g, '');
+    if (paymentMethod === 'credit_card' && cleanCard.length < 16) {
+      setProcessing(false);
+      setErrorMessage('Informe um número de cartão de crédito válido com 16 dígitos.');
+      return;
+    }
 
     try {
       const userStr = localStorage.getItem('usuario');
@@ -85,7 +112,7 @@ export default function EventCheckoutPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'Erro ao processar reserva do ingresso.');
+        throw new Error(data.error || 'Erro ao processar compra do ingresso.');
       }
 
       router.push('/ingressos');
@@ -193,7 +220,7 @@ export default function EventCheckoutPage() {
 
           <div className="space-y-6">
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-              <h2 className="text-sm font-bold text-white mb-4">Pagamento</h2>
+              <h2 className="text-sm font-bold text-white mb-4">Pagamento Simulado</h2>
 
               <div className="grid grid-cols-2 gap-2 mb-4">
                 <button
@@ -223,12 +250,14 @@ export default function EventCheckoutPage() {
               {paymentMethod === 'credit_card' ? (
                 <div className="space-y-3 mb-4">
                   <div>
-                    <label className="text-[11px] text-zinc-400 font-medium">Número do Cartão</label>
+                    <label className="text-[11px] text-zinc-400 font-medium">Número do Cartão (16 dígitos)</label>
                     <input
                       type="text"
                       required
                       value={cardNumber}
-                      onChange={(e) => setCardNumber(e.target.value)}
+                      onChange={handleCardNumberChange}
+                      placeholder="0000 0000 0000 0000"
+                      maxLength={19}
                       className="w-full mt-1 bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-purple-500"
                     />
                   </div>
@@ -249,7 +278,9 @@ export default function EventCheckoutPage() {
                         type="text"
                         required
                         value={cardExpiry}
-                        onChange={(e) => setCardExpiry(e.target.value)}
+                        onChange={handleExpiryChange}
+                        placeholder="MM/AA"
+                        maxLength={5}
                         className="w-full mt-1 bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-purple-500"
                       />
                     </div>
@@ -259,7 +290,9 @@ export default function EventCheckoutPage() {
                         type="text"
                         required
                         value={cardCvv}
-                        onChange={(e) => setCardCvv(e.target.value)}
+                        onChange={handleCvvChange}
+                        placeholder="123"
+                        maxLength={4}
                         className="w-full mt-1 bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-purple-500"
                       />
                     </div>
@@ -267,7 +300,7 @@ export default function EventCheckoutPage() {
                 </div>
               ) : (
                 <div className="p-4 bg-zinc-800/40 rounded-xl border border-zinc-800 text-center mb-4">
-                  <p className="text-xs text-zinc-300">O código Pix será compensado imediatamente na confirmação.</p>
+                  <p className="text-xs text-zinc-300">O pagamento Pix simulado será aprovado e compensado instantaneamente.</p>
                 </div>
               )}
 

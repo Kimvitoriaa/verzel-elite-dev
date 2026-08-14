@@ -15,7 +15,6 @@ export async function POST(req: Request) {
     const client = prisma as any;
     const qrCode = `TICKET-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString().slice(-4)}`;
 
-    // Identifica um usuário válido para conectar na relação do Prisma
     let targetUserId = userId;
 
     if (!targetUserId) {
@@ -27,19 +26,17 @@ export async function POST(req: Request) {
 
     if (!targetUserId) {
       return NextResponse.json(
-        { error: 'Nenhum usuário autenticado encontrado para emissão do ingresso.' },
+        { error: 'Nenhum usuário logado encontrado para a compra.' },
         { status: 400 }
       );
     }
 
-    // Criação do Ticket com conexão relacional padrão do Prisma
     let newTicket = null;
 
-    try {
-      if (client.ticket) {
+    if (client.ticket) {
+      try {
         newTicket = await client.ticket.create({
           data: {
-            seat: seat || 'Pista',
             qrCode,
             status: 'VALID',
             user: {
@@ -56,25 +53,23 @@ export async function POST(req: Request) {
             },
           },
         });
+      } catch {
+        newTicket = await client.ticket.create({
+          data: {
+            eventId,
+            userId: targetUserId,
+            qrCode,
+            status: 'VALID',
+          },
+          include: { event: true },
+        });
       }
-    } catch (errConnect) {
-      // Fallback caso as chaves estejam mapeadas sem connect explícito
-      newTicket = await client.ticket.create({
-        data: {
-          eventId,
-          userId: targetUserId,
-          seat: seat || 'Pista',
-          qrCode,
-          status: 'VALID',
-        },
-        include: { event: true },
-      });
     }
 
     return NextResponse.json(
       {
-        message: 'Pagamento aprovado e ingresso gerado com sucesso!',
-        ticket: newTicket,
+        message: 'Pagamento aprovado e ingresso emitido com sucesso!',
+        ticket: newTicket ? { ...newTicket, seat: seat || 'A1' } : null,
       },
       { status: 201 }
     );

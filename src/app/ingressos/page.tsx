@@ -24,7 +24,11 @@ export default function MeusIngressosPage() {
   useEffect(() => {
     async function loadTickets() {
       try {
-        const res = await fetch('/api/tickets/purchase');
+        const userStr = localStorage.getItem('usuario');
+        const user = userStr ? JSON.parse(userStr) : null;
+        const url = user?.id ? `/api/tickets/purchase?userId=${user.id}` : '/api/tickets/purchase';
+
+        const res = await fetch(url);
         if (res.ok) {
           const data = await res.json();
           setTickets(Array.isArray(data) ? data : []);
