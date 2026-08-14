@@ -15,6 +15,7 @@ export default function IngressosPage() {
   const [pin, setPin] = useState('');
   const [is2FaVerified, setIs2FaVerified] = useState(false);
   const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
 
   // Exemplo de ingresso simulado
   const mockTicket: Ticket = {
@@ -27,13 +28,19 @@ export default function IngressosPage() {
 
   const handleVerify2FA = (e: React.FormEvent) => {
     e.preventDefault();
-    // PIN de teste simulado: 1234
     if (pin === '1234') {
       setIs2FaVerified(true);
       setError('');
     } else {
       setError('PIN de segurança incorreto. Tente 1234.');
     }
+  };
+
+  const handleShareTicket = () => {
+    const shareUrl = `${window.location.origin}/ingressos?code=${mockTicket.qrCode}`;
+    navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
   };
 
   return (
@@ -118,23 +125,40 @@ export default function IngressosPage() {
                   [ Imagem do QR Code ]<br />
                   {mockTicket.qrCode}
                 </div>
-                <button
-                  onClick={() => {
-                    setIs2FaVerified(false);
-                    setSelectedTicket(null);
-                    setPin('');
-                  }}
-                  style={{
-                    padding: '0.4rem 0.8rem',
-                    backgroundColor: '#666',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Ocultar QR Code
-                </button>
+
+                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={handleShareTicket}
+                    style={{
+                      padding: '0.4rem 0.8rem',
+                      backgroundColor: '#8b5cf6',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {copied ? '🔗 Link Copiado!' : '🔗 Compartilhar Ingresso'}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIs2FaVerified(false);
+                      setSelectedTicket(null);
+                      setPin('');
+                    }}
+                    style={{
+                      padding: '0.4rem 0.8rem',
+                      backgroundColor: '#666',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Ocultar QR Code
+                  </button>
+                </div>
               </div>
             )}
           </div>

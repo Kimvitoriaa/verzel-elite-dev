@@ -1,69 +1,136 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+
+interface Event {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  location: string;
+  totalTickets: number;
+}
+
+export default function HomePage() {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchEvents() {
+      try {
+        const res = await fetch('/api/events');
+        if (res.ok) {
+          const data = await res.json();
+          setEvents(data);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar eventos:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchEvents();
+  }, []);
+
+  const filteredEvents = events.filter((event) =>
+    event.title.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <main className="min-h-screen bg-black text-white p-6 md:p-12">
+      <div className="max-w-6xl mx-auto">
+        {/* Header / Banner */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10 border-b border-zinc-800 pb-6">
+          <div>
+            <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">
+              🎟️ Verzel Elite Events
+            </h1>
+            <p className="text-zinc-400 text-sm mt-1">
+              Explore o catálogo completo de shows e filmes em cartaz.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Link
+              href="/ingressos"
+              className="bg-zinc-800 hover:bg-zinc-700 text-xs px-4 py-2.5 rounded-lg font-medium transition"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              🎟️ Meus Ingressos
+            </Link>
+            <Link
+              href="/portaria"
+              className="bg-purple-600 hover:bg-purple-500 text-xs px-4 py-2.5 rounded-lg font-semibold transition"
             >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              🏛️ Portaria 2D
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Campo de Busca */}
+        <div className="mb-8">
+          <input
+            type="text"
+            placeholder="🔍 Pesquisar evento por título..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 transition"
+          />
         </div>
-      </main>
-    </div>
+
+        {/* Listagem de Eventos */}
+        {loading ? (
+          <div className="text-center py-20 text-zinc-500 text-sm">
+            Carregando eventos do catálogo...
+          </div>
+        ) : filteredEvents.length === 0 ? (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-10 text-center text-zinc-400">
+            Nenhum evento encontrado para "{search}".
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredEvents.map((event) => (
+              <div
+                key={event.id}
+                className="bg-zinc-900 border border-zinc-800 hover:border-purple-500/50 rounded-2xl p-6 flex flex-col justify-between transition group shadow-lg"
+              >
+                <div>
+                  <span className="text-[10px] font-mono uppercase bg-purple-950 text-purple-300 px-2.5 py-1 rounded-full border border-purple-800/40">
+                    Disponível
+                  </span>
+                  <h2 className="text-xl font-bold mt-3 text-zinc-100 group-hover:text-purple-400 transition">
+                    {event.title}
+                  </h2>
+                  <p className="text-xs text-zinc-400 mt-2 line-clamp-3">
+                    {event.description}
+                  </p>
+                </div>
+
+                <div className="mt-6 border-t border-zinc-800/80 pt-4 space-y-2">
+                  <div className="flex justify-between text-xs text-zinc-400">
+                    <span>📍 Local:</span>
+                    <span className="text-zinc-200 font-medium">{event.location}</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-zinc-400">
+                    <span>📅 Data:</span>
+                    <span className="text-zinc-200 font-medium">
+                      {new Date(event.date).toLocaleDateString('pt-BR')}
+                    </span>
+                  </div>
+
+                  <Link
+                    href={`/eventos/${event.id}`}
+                    className="w-full mt-4 bg-purple-600 hover:bg-purple-500 text-white font-semibold py-2.5 rounded-xl text-xs flex items-center justify-center transition"
+                  >
+                    Garantir Ingresso
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </main>
   );
 }

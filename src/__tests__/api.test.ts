@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-describe('Suíte de Testes do Backend - Verzel Elite Dev', () => {
+describe('Suíte de Testes do Backend & Regras de Negócio - Verzel Elite Dev', () => {
   it('Deve validar a presença das variáveis de ambiente essenciais', () => {
     expect(process.env.DATABASE_URL).toBeDefined();
     expect(process.env.TMDB_API_KEY).toBeDefined();
@@ -53,5 +53,28 @@ describe('Suíte de Testes do Backend - Verzel Elite Dev', () => {
     expect(accessibilityOptions.highContrast).toContain('contrast-125');
     expect(accessibilityOptions.focusedMode).toBe('grayscale');
     expect(accessibilityOptions.largeText).toBe('18px');
+  });
+
+  it('Deve simular o fluxo de pagamento tratando os cenários de Sucesso e Recusa', () => {
+    const processarPagamento = (status: 'SUCCESS' | 'REFUSED') => {
+      if (status === 'SUCCESS') return { approved: true, message: 'Compra Aprovada com Sucesso!' };
+      return { approved: false, message: 'Pagamento Recusado pela Operadora!' };
+    };
+
+    expect(processarPagamento('SUCCESS').approved).toBe(true);
+    expect(processarPagamento('REFUSED').approved).toBe(false);
+  });
+
+  it('Deve filtrar eventos corretamente pelo título da busca', () => {
+    const eventos = [
+      { id: '1', title: 'Batman' },
+      { id: '2', title: 'Show de Rock' },
+    ];
+    const busca = 'rock';
+
+    const resultado = eventos.filter((e) => e.title.toLowerCase().includes(busca.toLowerCase()));
+
+    expect(resultado).toHaveLength(1);
+    expect(resultado[0].title).toBe('Show de Rock');
   });
 });
