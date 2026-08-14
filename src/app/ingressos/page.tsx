@@ -20,26 +20,24 @@ export default function MeusIngressosPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [usuarioLogado, setUsuarioLogado] = useState<any>(null);
 
   useEffect(() => {
-    async function loadTickets() {
+    const userStr = localStorage.getItem('usuario');
+    if (userStr) {
       try {
-        const userStr = localStorage.getItem('usuario');
-        const user = userStr ? JSON.parse(userStr) : null;
-        const url = user?.id ? `/api/tickets/purchase?userId=${user.id}` : '/api/tickets/purchase';
+        const user = JSON.parse(userStr);
+        setUsuarioLogado(user);
 
-        const res = await fetch(url);
-        if (res.ok) {
-          const data = await res.json();
-          setTickets(Array.isArray(data) ? data : []);
-        }
-      } catch (err) {
-        console.error('Erro ao buscar ingressos:', err);
-      } finally {
-        setLoading(false);
-      }
+        fetch(`/api/tickets/purchase?userId=${user.id}`)
+          .then((res) => (res.ok ? res.json() : []))
+          .then((data) => setTickets(Array.isArray(data) ? data : []))
+          .catch((err) => console.error('Erro ao buscar ingressos:', err))
+          .finally(() => setLoading(false));
+        return;
+      } catch {}
     }
-    loadTickets();
+    setLoading(false);
   }, []);
 
   function handleShare(qrCode: string, id: string) {
@@ -66,11 +64,24 @@ export default function MeusIngressosPage() {
           <div className="text-center py-20 text-zinc-500 text-xs animate-pulse">
             Carregando ingressos...
           </div>
+        ) : !usuarioLogado ? (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-12 text-center text-zinc-400">
+            <p className="text-base font-semibold text-white mb-1">Você não está conectado</p>
+            <p className="text-xs text-zinc-400 mb-6">
+              Faça login na sua conta para visualizar os seus ingressos comprados.
+            </p>
+            <Link
+              href="/login"
+              className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold py-2.5 px-6 rounded-xl transition"
+            >
+              Fazer Login / Cadastrar
+            </Link>
+          </div>
         ) : tickets.length === 0 ? (
           <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-12 text-center text-zinc-400">
             <p className="text-base font-semibold text-white mb-1">Nenhum ingresso encontrado</p>
             <p className="text-xs text-zinc-400 mb-6">
-              Você ainda não realizou a compra de nenhum ingresso.
+              Você ainda não realizou a compra de nenhum ingresso com esta conta.
             </p>
             <Link
               href="/"

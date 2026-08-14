@@ -12,28 +12,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'ID do evento é obrigatório.' }, { status: 400 });
     }
 
-    const client = prisma as any;
-    const qrCode = `TICKET-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString().slice(-4)}`;
-
-    let targetUserId = userId;
-
-    if (!targetUserId) {
-      const firstUser = client.user
-        ? await client.user.findFirst()
-        : await client.usuario?.findFirst();
-      targetUserId = firstUser?.id;
-    }
-
-    if (!targetUserId) {
+    if (!userId) {
       return NextResponse.json(
-        { error: 'Nenhum usuário logado encontrado para a compra.' },
-        { status: 400 }
+        { error: 'Você precisa estar logado para comprar um ingresso.' },
+        { status: 401 }
       );
     }
 
-    let newTicket = null;
+    const client = prisma as any;
+    const qrCode = `TICKET-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString().slice(-4)}`;
 
-    // Lista de status comuns em enums do Prisma para garantir compatibilidade
+    let newTicket = null;
     const possibleStatuses = ['ACTIVE', 'VALID', 'CONFIRMED', 'PAID', 'DISPONIVEL', 'VALIDO', 'PENDING'];
 
     if (client.ticket) {
@@ -42,36 +31,33 @@ export async function POST(req: Request) {
           newTicket = await client.ticket.create({
             data: {
               eventId,
-              userId: targetUserId,
+              userId,
               qrCode,
               status: statusVal,
             },
             include: { event: true },
           });
           if (newTicket) break;
-        } catch (errStatus) {
-          // Tenta o próximo valor de enum válido
+        } catch {
           continue;
         }
       }
 
-      // Fallback: se nenhum enum com status passou, tenta criar sem enviar a propriedade status
       if (!newTicket) {
         try {
           newTicket = await client.ticket.create({
             data: {
               eventId,
-              userId: targetUserId,
+              userId,
               qrCode,
             },
             include: { event: true },
           });
-        } catch (e) {
-          // Último recurso de compatibilidade relacional
+        } catch {
           newTicket = await client.ticket.create({
             data: {
               qrCode,
-              user: { connect: { id: targetUserId } },
+              user: { connect: { id: userId } },
               event: { connect: { id: eventId } },
             },
             include: { event: true },
@@ -102,10 +88,14 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get('userId');
 
+    // Se não passou userId (não está logado), não retorna nenhum ingresso
+    if (!userId) {
+      return NextResponse.json([]);
+    }
+
     if (client.ticket) {
-      const whereCondition = userId ? { userId } : {};
       const tickets = await client.ticket.findMany({
-        where: whereCondition,
+        where: { userId },
         include: { event: true },
         orderBy: { id: 'desc' },
       });

@@ -26,7 +26,6 @@ export default function EventCheckoutPage() {
   const [quantity, setQuantity] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState<'credit_card' | 'pix'>('credit_card');
 
-  // Campos de Cartão com formatação
   const [cardNumber, setCardNumber] = useState('4532 1120 4920 4242');
   const [cardHolder, setCardHolder] = useState('CLIENTE TESTE');
   const [cardExpiry, setCardExpiry] = useState('12/28');
@@ -83,6 +82,16 @@ export default function EventCheckoutPage() {
   async function handleCheckout(e: React.FormEvent) {
     e.preventDefault();
     setErrorMessage(null);
+
+    // Verificação de usuário logado
+    const userStr = localStorage.getItem('usuario');
+    if (!userStr) {
+      alert('Você precisa entrar na sua conta ou se cadastrar para comprar um ingresso.');
+      router.push('/login');
+      return;
+    }
+
+    const user = JSON.parse(userStr);
     setProcessing(true);
 
     const cleanCard = cardNumber.replace(/\s/g, '');
@@ -93,15 +102,12 @@ export default function EventCheckoutPage() {
     }
 
     try {
-      const userStr = localStorage.getItem('usuario');
-      const user = userStr ? JSON.parse(userStr) : null;
-
       const res = await fetch('/api/tickets/purchase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           eventId,
-          userId: user?.id,
+          userId: user.id,
           seat: selectedSeat,
           quantity,
           amount: TICKET_PRICE * quantity,
