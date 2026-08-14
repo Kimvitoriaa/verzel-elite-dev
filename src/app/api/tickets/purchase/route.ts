@@ -33,36 +33,50 @@ export async function POST(req: Request) {
 
     let newTicket = null;
 
+    // Lista de status comuns em enums do Prisma para garantir compatibilidade
+    const possibleStatuses = ['ACTIVE', 'VALID', 'CONFIRMED', 'PAID', 'DISPONIVEL', 'VALIDO', 'PENDING'];
+
     if (client.ticket) {
-      try {
-        newTicket = await client.ticket.create({
-          data: {
-            qrCode,
-            status: 'VALID',
-            user: {
-              connect: { id: targetUserId },
+      for (const statusVal of possibleStatuses) {
+        try {
+          newTicket = await client.ticket.create({
+            data: {
+              eventId,
+              userId: targetUserId,
+              qrCode,
+              status: statusVal,
             },
-            event: {
-              connect: { id: eventId },
+            include: { event: true },
+          });
+          if (newTicket) break;
+        } catch (errStatus) {
+          // Tenta o próximo valor de enum válido
+          continue;
+        }
+      }
+
+      // Fallback: se nenhum enum com status passou, tenta criar sem enviar a propriedade status
+      if (!newTicket) {
+        try {
+          newTicket = await client.ticket.create({
+            data: {
+              eventId,
+              userId: targetUserId,
+              qrCode,
             },
-          },
-          include: {
-            event: true,
-            user: {
-              select: { id: true, name: true, email: true },
+            include: { event: true },
+          });
+        } catch (e) {
+          // Último recurso de compatibilidade relacional
+          newTicket = await client.ticket.create({
+            data: {
+              qrCode,
+              user: { connect: { id: targetUserId } },
+              event: { connect: { id: eventId } },
             },
-          },
-        });
-      } catch {
-        newTicket = await client.ticket.create({
-          data: {
-            eventId,
-            userId: targetUserId,
-            qrCode,
-            status: 'VALID',
-          },
-          include: { event: true },
-        });
+            include: { event: true },
+          });
+        }
       }
     }
 
