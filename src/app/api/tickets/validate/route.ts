@@ -1,19 +1,31 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const { qrCode, validatorId } = await request.json();
+    const body = await req.json();
+    const qrCode = (body.qrCode || body.code || '').trim();
 
-    if (!qrCode || !validatorId) {
+    if (!qrCode) {
       return NextResponse.json(
-        { error: 'QR Code e ID do validador são obrigatórios.' },
+        { error: 'Código do ingresso não informado.' },
         { status: 400 }
       );
     }
 
-    // Buscar o ingresso pelo hash do QR Code
-    const ticket = await prisma.ticket.findUnique({
+    const client = prisma as any;
+
+    if (!client.ticket) {
+      return NextResponse.json(
+        { error: 'Serviço de ingressos indisponível.' },
+        { status: 500 }
+      );
+    }
+
+    // Busca o ingresso pelo hash/código QR
+    const ticket = await client.ticket.findUnique({
       where: { qrCode },
       include: {
         event: true,
@@ -23,43 +35,45 @@ export async function POST(request: Request) {
 
     if (!ticket) {
       return NextResponse.json(
-        { error: 'Ingresso inválido ou não encontrado.' },
+        { error: 'Ingresso não encontrado ou inválido.' },
         { status: 404 }
       );
     }
 
-    // Verificar se já foi utilizado
-    if (ticket.status === 'USED') {
+    if (ticket.status === 'USED' || ticket.status === 'UTILIZADO') {
       return NextResponse.json(
-        { error: 'ATENÇÃO: Ingresso já utilizado anteriormente!' },
+        { error: 'Acesso negado: Este ingresso já foi utilizado.' },
         { status: 400 }
       );
     }
 
-    // Registrar a validação na tabela Validation e atualizar o status do Ticket
-    const validation = await prisma.validation.create({
-      data: {
-        ticketId: ticket.id,
-        validatorId,
-      },
-    });
+    if (ticket.status === 'CANCELLED' || ticket.status === 'CANCELADO') {
+      return NextResponse.json(
+        { error: 'Acesso negado: Este ingresso foi cancelado.' },
+        { status: 400 }
+      );
+    }
 
-    await prisma.ticket.update({
+    // Marca como utilizado na portaria para evitar revalidação
+    const updated = await client.ticket.update({
       where: { id: ticket.id },
       data: { status: 'USED' },
+      include: { event: true },
     });
 
-    return NextResponse.json(
-      {
-        message: 'Ingresso validado com sucesso! Entrada liberada.',
-        ticket,
-        validation,
+    return NextResponse.json({
+      message: 'Entrada liberada! Ingresso validado com sucesso.',
+      ticket: {
+        id: updated.id,
+        seat: updated.seat,
+        eventTitle: updated.event?.title,
+        status: updated.status,
       },
-      { status: 200 }
-    );
-  } catch (error) {
+    });
+  } catch (error: any) {
+    console.error('Erro na validação da portaria:', error);
     return NextResponse.json(
-      { error: 'Erro interno ao validar ingresso.' },
+      { error: error?.message || 'Erro interno ao validar ingresso.' },
       { status: 500 }
     );
   }

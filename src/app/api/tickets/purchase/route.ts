@@ -13,70 +13,73 @@ export async function POST(req: Request) {
     }
 
     const client = prisma as any;
-    const qrCode = `TICKET-${Math.random().toString(36).substring(2, 9).toUpperCase()}-2026`;
+    const qrCode = `TICKET-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString().slice(-4)}`;
 
-    // Localiza o evento
-    let event = null;
-    if (client.event) {
-      event = await client.event.findUnique({ where: { id: eventId } });
-    } else if (client.evento) {
-      event = await client.evento.findUnique({ where: { id: eventId } });
+    // Identifica um usuário válido para conectar na relação do Prisma
+    let targetUserId = userId;
+
+    if (!targetUserId) {
+      const firstUser = client.user
+        ? await client.user.findFirst()
+        : await client.usuario?.findFirst();
+      targetUserId = firstUser?.id;
     }
 
-    let ticketCreated = null;
+    if (!targetUserId) {
+      return NextResponse.json(
+        { error: 'Nenhum usuário autenticado encontrado para emissão do ingresso.' },
+        { status: 400 }
+      );
+    }
 
-    if (client.ticket) {
-      // 1. Tenta criar associando com o userId (se válido)
-      if (userId) {
-        try {
-          ticketCreated = await client.ticket.create({
-            data: {
-              eventId,
-              userId,
-              seat: seat || 'A1',
-              qrCode,
-              status: 'VALID',
-            },
-            include: { event: true },
-          });
-        } catch {
-          // Se o userId não existir na tabela de User, cria sem a FK
-          ticketCreated = null;
-        }
-      }
+    // Criação do Ticket com conexão relacional padrão do Prisma
+    let newTicket = null;
 
-      // 2. Se não associou por FK, grava o ticket apenas com o eventId
-      if (!ticketCreated) {
-        ticketCreated = await client.ticket.create({
+    try {
+      if (client.ticket) {
+        newTicket = await client.ticket.create({
           data: {
-            eventId,
-            seat: seat || 'A1',
+            seat: seat || 'Pista',
             qrCode,
             status: 'VALID',
+            user: {
+              connect: { id: targetUserId },
+            },
+            event: {
+              connect: { id: eventId },
+            },
           },
-          include: { event: true },
+          include: {
+            event: true,
+            user: {
+              select: { id: true, name: true, email: true },
+            },
+          },
         });
       }
+    } catch (errConnect) {
+      // Fallback caso as chaves estejam mapeadas sem connect explícito
+      newTicket = await client.ticket.create({
+        data: {
+          eventId,
+          userId: targetUserId,
+          seat: seat || 'Pista',
+          qrCode,
+          status: 'VALID',
+        },
+        include: { event: true },
+      });
     }
 
     return NextResponse.json(
       {
         message: 'Pagamento aprovado e ingresso gerado com sucesso!',
-        ticket: ticketCreated || {
-          id: qrCode,
-          qrCode,
-          seat: seat || 'A1',
-          event: event || {
-            title: 'Rock in Rio Elite - Palco Mundo',
-            date: '2026-09-18T20:00:00.000Z',
-            location: 'Cidade do Rock - Rio de Janeiro',
-          },
-        },
+        ticket: newTicket,
       },
       { status: 201 }
     );
   } catch (error: any) {
-    console.error('Erro na rota de compra:', error);
+    console.error('Erro na compra de ingresso:', error);
     return NextResponse.json(
       { error: error?.message || 'Erro interno ao processar compra.' },
       { status: 500 }
@@ -87,8 +90,13 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
   try {
     const client = prisma as any;
+    const { searchParams } = new URL(req.url);
+    const userId = searchParams.get('userId');
+
     if (client.ticket) {
+      const whereCondition = userId ? { userId } : {};
       const tickets = await client.ticket.findMany({
+        where: whereCondition,
         include: { event: true },
         orderBy: { id: 'desc' },
       });
