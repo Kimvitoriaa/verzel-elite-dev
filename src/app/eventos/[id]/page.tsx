@@ -14,7 +14,6 @@ interface EventDetails {
   location: string;
   totalTickets: number;
   bannerUrl?: string;
-  price?: number;
 }
 
 export default function EventCheckoutPage() {
@@ -24,14 +23,14 @@ export default function EventCheckoutPage() {
 
   const [event, setEvent] = useState<EventDetails | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedSeat, setSelectedSeat] = useState<string | null>('A1');
+  const [selectedSeat, setSelectedSeat] = useState<string>('A1');
   const [quantity, setQuantity] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState<'credit_card' | 'pix'>('credit_card');
   const [cardSimulationState, setCardSimulationState] = useState<'success' | 'refused'>('success');
   const [processing, setProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const TICKET_PRICE = 80.0; // Preço padrão para cálculo
+  const TICKET_PRICE = 80.0;
 
   const seats = [
     ['A1', 'A2', 'A3', 'A4', 'A5', 'A6'],
@@ -62,8 +61,7 @@ export default function EventCheckoutPage() {
     setErrorMessage(null);
     setProcessing(true);
 
-    // Simulação do tempo de resposta da adquirente/gateway
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 800));
 
     if (paymentMethod === 'credit_card' && cardSimulationState === 'refused') {
       setProcessing(false);
@@ -77,6 +75,7 @@ export default function EventCheckoutPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           eventId,
+          userId: 'cliente1-uuid-elite',
           seat: selectedSeat,
           quantity,
           amount: TICKET_PRICE * quantity,
@@ -84,12 +83,12 @@ export default function EventCheckoutPage() {
         }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const data = await res.json();
         throw new Error(data.error || 'Erro ao processar reserva do ingresso.');
       }
 
-      // Redireciona com sucesso para a tela de ingressos
       router.push('/ingressos?status=success');
     } catch (err: any) {
       setErrorMessage(err.message || 'Falha na comunicação com o servidor.');
@@ -115,7 +114,7 @@ export default function EventCheckoutPage() {
           ← Voltar para o Catálogo
         </Link>
 
-        {/* Header do Evento */}
+        {/* Informações do Evento */}
         <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-2xl p-6 mb-8 backdrop-blur">
           <span className="text-[10px] font-bold tracking-wider uppercase bg-purple-950/80 text-purple-400 border border-purple-800/50 px-3 py-1 rounded-full">
             Reserva & Checkout
@@ -132,13 +131,10 @@ export default function EventCheckoutPage() {
         </div>
 
         <form onSubmit={handleCheckout} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Coluna da Esquerda: Assentos e Quantidade */}
+          {/* Assentos */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Mapa de Assentos */}
             <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-6">
-              <h2 className="text-sm font-bold text-white mb-1 flex items-center gap-2">
-                💺 Escolha seu Assento (Mapa de Cinema/Teatro)
-              </h2>
+              <h2 className="text-sm font-bold text-white mb-1">💺 Escolha seu Assento (Mapa de Cinema/Teatro)</h2>
               <p className="text-xs text-zinc-400 mb-4">Selecione uma poltrona disponível para este evento.</p>
 
               <div className="w-full bg-zinc-800/40 text-center text-[10px] text-zinc-500 font-bold py-1.5 rounded-lg mb-6 tracking-widest uppercase border border-zinc-800">
@@ -199,12 +195,11 @@ export default function EventCheckoutPage() {
             </div>
           </div>
 
-          {/* Coluna da Direita: Pagamento e Checkout */}
+          {/* Pagamento */}
           <div className="space-y-6">
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
               <h2 className="text-sm font-bold text-white mb-4">💳 Pagamento Simulado</h2>
 
-              {/* Seletor de Método */}
               <div className="grid grid-cols-2 gap-2 mb-4">
                 <button
                   type="button"
@@ -230,7 +225,6 @@ export default function EventCheckoutPage() {
                 </button>
               </div>
 
-              {/* Detalhes do Cartão Simulado */}
               {paymentMethod === 'credit_card' ? (
                 <div className="space-y-3 mb-4">
                   <div>
@@ -257,11 +251,10 @@ export default function EventCheckoutPage() {
                 </div>
               ) : (
                 <div className="p-4 bg-zinc-800/40 rounded-xl border border-zinc-800 text-center mb-4">
-                  <p className="text-xs text-zinc-300">O QR Code Pix de teste será gerado e compensado automaticamente após a confirmação.</p>
+                  <p className="text-xs text-zinc-300">O QR Code Pix de teste será gerado e compensado automaticamente.</p>
                 </div>
               )}
 
-              {/* Mensagem de Erro em caso de Recusa */}
               {errorMessage && (
                 <div className="mb-4 p-3 bg-red-950/80 border border-red-800 text-red-300 rounded-xl text-xs flex items-start gap-2">
                   <span>⚠️</span>
@@ -269,7 +262,6 @@ export default function EventCheckoutPage() {
                 </div>
               )}
 
-              {/* Resumo Financeiro */}
               <div className="border-t border-zinc-800 pt-4 space-y-2 mb-6">
                 <div className="flex justify-between text-xs text-zinc-400">
                   <span>Ingressos ({quantity}x):</span>
@@ -285,20 +277,12 @@ export default function EventCheckoutPage() {
                 </div>
               </div>
 
-              {/* Botão Final de Checkout */}
               <button
                 type="submit"
                 disabled={processing}
                 className="w-full bg-purple-600 hover:bg-purple-500 disabled:bg-purple-800 text-white font-bold py-3 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-purple-600/30"
               >
-                {processing ? (
-                  <>
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                    Processando Transação...
-                  </>
-                ) : (
-                  '🔒 Confirmar e Gerar Ingresso'
-                )}
+                {processing ? 'Processando Transação...' : '🔒 Confirmar e Gerar Ingresso'}
               </button>
             </div>
           </div>
